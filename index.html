@@ -1,0 +1,2244 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#E7F0F5">
+<title>CATATAN PRESENSI SISWA-SISWI — Gerbang Pintar SMAN 4 Kota Ternate</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --cream:#E7F0F5;
+  --panel:#F3F9FC;
+  --panel-hi:#FFFFFF;
+  --well:#E0EDF4;
+  --ink:#0A2540;
+  --on-accent:#F2F9FC;
+  --line:rgba(15,49,74,0.14);
+  --line-strong:rgba(15,49,74,0.26);
+  --gold:#0F5C8C;
+  --gold-dim:#0B4468;
+  --green:#1B8A8A;
+  --green-dim:#136666;
+  --rust:#C0604B;
+  --rust-dim:#8F4635;
+  --text:#122A3D;
+  --text-dim:#4E6B80;
+  --text-faint:#8098AA;
+  --radius:14px;
+}
+*{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  background:
+    radial-gradient(1100px 600px at 15% -10%, rgba(15,92,140,0.10), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(27,138,138,0.08), transparent 55%),
+    var(--cream);
+  color:var(--text);
+  font-family:'Inter',sans-serif;
+  height:100vh;
+  height:100dvh;
+  overflow:hidden;
+  font-size:17.5px;
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+  overscroll-behavior:none;
+}
+.mono{font-family:'JetBrains Mono',monospace;}
+.display{font-family:'Space Grotesk',sans-serif;}
+#app{height:100vh; height:100dvh; display:flex; flex-direction:column; overflow:hidden;}
+
+/* ===== top bar ===== */
+.topbar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:9px 20px; padding-top:calc(9px + env(safe-area-inset-top));
+  padding-left:calc(20px + env(safe-area-inset-left));
+  padding-right:calc(20px + env(safe-area-inset-right));
+  border-bottom:1px solid var(--line);
+  background:rgba(247,241,224,0.72); backdrop-filter:blur(6px);
+  flex-shrink:0;
+}
+.brand{display:flex; align-items:center; gap:10px;}
+.brand-mark{
+  width:90px; height:90px; border-radius:50%;
+  background:#fff;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 3px 10px rgba(15,92,140,0.22);
+  flex-shrink:0; padding:2px;
+}
+.brand-mark img{width:100%; height:100%; object-fit:contain; border-radius:50%;}
+.brand-mark svg{width:19px; height:19px;}
+.brand-text .name{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:19.5px; letter-spacing:0.2px; line-height:1.15; max-width:230px;}
+.brand-text .sub{font-size:15.62px; color:var(--text-dim); letter-spacing:0.2px; line-height:1.2;}
+.topbar-right{display:flex; align-items:center; gap:10px;}
+.server-status{display:flex; align-items:center; gap:6px; font-size:13.12px; font-weight:500; padding:5px 10px; border-radius:20px; border:1px solid var(--line-strong); background:var(--panel); flex-shrink:0; cursor:default;}
+.server-status .dot{width:7px; height:7px; border-radius:50%; background:var(--text-faint); flex-shrink:0;}
+.server-status.on{color:#1E9E8C; border-color:rgba(30,158,140,0.35); background:rgba(30,158,140,0.08);}
+.server-status.on .dot{background:#1E9E8C; box-shadow:0 0 0 3px rgba(30,158,140,0.2); animation:pulse 2s infinite;}
+.server-status.off{color:var(--rust); border-color:rgba(192,96,75,0.3); background:rgba(192,96,75,0.06);}
+.server-status.off .dot{background:var(--rust);}
+.server-status.checking .dot{background:var(--text-faint); animation:pulse 1s infinite;}
+.clock{font-family:'JetBrains Mono',monospace; font-size:13.75px; color:var(--text-dim); text-align:right; line-height:1.2;}
+.clock b{color:var(--text); display:block; font-size:15px;}
+.btn-ghost{
+  background:transparent; border:1px solid var(--line-strong); color:var(--text-dim);
+  padding:6px 12px; border-radius:8px; font-size:15px; cursor:pointer; font-family:'Inter';
+  transition:all .15s ease;
+}
+.btn-ghost:hover{border-color:var(--gold); color:var(--text); background:rgba(15,92,140,0.06);}
+
+main{flex:1; display:flex; flex-direction:column; min-height:0; overflow:hidden;}
+
+/* ===== LANDING ===== */
+.landing{
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:14px 24px; position:relative; min-height:0;
+}
+.landing-eyebrow{
+  font-family:'JetBrains Mono',monospace; font-size:13.12px; letter-spacing:2px;
+  color:var(--gold); text-transform:uppercase; margin-bottom:10px; display:flex; align-items:center; gap:8px;
+}
+.landing-eyebrow .dot{width:5px; height:5px; border-radius:50%; background:var(--green); box-shadow:0 0 0 3px rgba(27,138,138,0.18); animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;} 50%{opacity:0.4;}}
+.landing h1{
+  font-family:'Space Grotesk',sans-serif; font-weight:700;
+  font-size:clamp(25px,3.25vw,35px); text-align:center; line-height:1.14; letter-spacing:-0.3px;
+  max-width:640px;
+}
+.landing h1 span{color:var(--gold);}
+.landing p.lead{
+  color:var(--text-dim); font-size:15.62px; max-width:460px; text-align:center; margin-top:10px; line-height:1.5;
+}
+
+.gate-select{
+  display:grid; grid-template-columns:1fr 1fr; gap:12px;
+  max-width:510px; width:100%; margin-top:22px;
+  position:relative;
+}
+.gate-select::before{
+  content:''; position:absolute; left:50%; top:-12px; bottom:-12px; width:1px;
+  background:linear-gradient(var(--line), var(--line-strong), var(--line));
+  transform:translateX(-50%);
+}
+.gate-card{
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  padding:14px; cursor:pointer; text-align:left; position:relative; overflow:hidden;
+  transition:transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+.gate-card:hover{transform:translateY(-3px); border-color:var(--line-strong); box-shadow:0 14px 30px rgba(60,50,20,0.16);}
+.gate-card .gate-num{
+  font-family:'JetBrains Mono',monospace; font-size:9.38px; color:var(--text-faint);
+  letter-spacing:1.5px; text-transform:uppercase; margin-bottom:6px; display:block;
+}
+.gate-card .gate-icon{
+  width:27px; height:27px; border-radius:8px; display:flex; align-items:center; justify-content:center;
+  margin-bottom:8px;
+}
+.gate-card.admin .gate-icon{background:rgba(15,92,140,0.12); border:1px solid rgba(15,92,140,0.3);}
+.gate-card.petugas .gate-icon{background:rgba(27,138,138,0.12); border:1px solid rgba(27,138,138,0.3);}
+.gate-card .gate-icon svg{width:14px; height:14px;}
+.gate-card h3{font-family:'Space Grotesk',sans-serif; font-size:14.53px; font-weight:600; margin-bottom:3px;}
+.gate-card p{font-size:10.79px; color:var(--text-dim); line-height:1.4; margin-bottom:8px;}
+.gate-card .gate-enter{
+  display:inline-flex; align-items:center; gap:5px; font-size:10.79px; font-weight:600;
+  color:var(--text);
+}
+.gate-card.admin .gate-enter{color:var(--gold);}
+.gate-card.petugas .gate-enter{color:var(--green);}
+.gate-card .gate-enter svg{width:9px; height:9px; transition:transform .15s ease;}
+.gate-card:hover .gate-enter svg{transform:translateX(3px);}
+
+.landing-stats{
+  display:flex; gap:26px; margin-top:22px; padding-top:14px; border-top:1px solid var(--line);
+  max-width:680px; width:100%; justify-content:center;
+}
+.stat{text-align:center;}
+.stat .n{font-family:'Space Grotesk',sans-serif; font-size:23.75px; font-weight:700; color:var(--gold);}
+.stat .l{font-size:11.88px; color:var(--text-faint); letter-spacing:0.3px; margin-top:1px;}
+.landing-copyright{margin-top:24px; padding-bottom:6px; font-size:12.5px; color:var(--text-faint); text-align:center;}
+
+/* ===== shared screen shell ===== */
+.screen{flex:1; display:flex; flex-direction:column; min-height:0; overflow:hidden;}
+.screen-header{
+  padding:11px 20px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  flex-shrink:0;
+}
+.screen-header .back{
+  display:flex; align-items:center; gap:7px; color:var(--text-dim); font-size:15px; cursor:pointer; background:none; border:none; font-family:'Inter';
+}
+.screen-header .back:hover{color:var(--text);}
+.screen-header .back svg{width:13px; height:13px;}
+.screen-title{font-family:'Space Grotesk',sans-serif; font-size:18.75px; font-weight:600;}
+.screen-title .tag{
+  font-family:'JetBrains Mono',monospace; font-size:11.88px; color:var(--on-accent); background:var(--gold);
+  padding:2px 7px; border-radius:5px; margin-left:8px; vertical-align:middle; font-weight:600;
+}
+.screen-body{flex:1; padding:14px 20px 16px; max-width:1200px; width:100%; margin:0 auto; overflow-y:auto; min-height:0; -webkit-overflow-scrolling:touch;
+  padding-left:calc(20px + env(safe-area-inset-left)); padding-right:calc(20px + env(safe-area-inset-right));
+  padding-bottom:calc(16px + env(safe-area-inset-bottom));
+}
+
+/* ===== admin login ===== */
+.login-wrap{flex:1; display:flex; align-items:center; justify-content:center; padding:16px 20px; min-height:0;}
+.login-card{
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  padding:22px 24px; width:100%; max-width:300px; text-align:center;
+}
+.login-card .lock{
+  width:36px; height:36px; margin:0 auto 10px; border-radius:10px; background:rgba(15,92,140,0.12);
+  border:1px solid rgba(15,92,140,0.3); display:flex; align-items:center; justify-content:center;
+}
+.login-card .lock svg{width:17px; height:17px;}
+.login-card h3{font-family:'Space Grotesk',sans-serif; font-size:18.75px; margin-bottom:4px;}
+.login-card p{font-size:14.38px; color:var(--text-dim); margin-bottom:14px;}
+.pin-input{
+  width:100%; background:var(--well); border:1px solid var(--line-strong); border-radius:8px;
+  padding:9px; text-align:center; font-family:'JetBrains Mono',monospace; font-size:20px; letter-spacing:7px;
+  color:var(--text); margin-bottom:10px;
+}
+.pin-input:focus{outline:none; border-color:var(--gold);}
+.hint{font-size:13.12px; color:var(--text-faint); margin-bottom:12px;}
+.err-msg{color:var(--rust); font-size:14.38px; margin-bottom:8px; min-height:14px;}
+
+/* ===== buttons ===== */
+.btn{
+  border:none; border-radius:9px; padding:9px 16px; font-size:15.62px; font-weight:600; cursor:pointer;
+  font-family:'Inter'; display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  transition:transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+}
+.btn:active{transform:scale(0.97);}
+.btn-gold{background:linear-gradient(155deg,var(--gold),var(--gold-dim)); color:var(--on-accent); box-shadow:0 5px 14px rgba(15,92,140,0.22);}
+.btn-green{background:linear-gradient(155deg,var(--green),var(--green-dim)); color:var(--gold-dim); box-shadow:0 5px 14px rgba(27,138,138,0.22);}
+.btn-rust{background:linear-gradient(155deg,var(--rust),var(--rust-dim)); color:#fff; box-shadow:0 5px 14px rgba(192,96,75,0.28);}
+.btn-block{width:100%;}
+.btn:disabled{opacity:0.45; cursor:not-allowed;}
+.btn-sm{padding:7px 11px; font-size:14.38px; border-radius:7px;}
+.btn-outline{background:transparent; border:1px solid var(--line-strong); color:var(--text);}
+.btn-outline:hover{border-color:var(--gold);}
+
+/* ===== tabs ===== */
+.tabs{display:flex; gap:6px; margin-bottom:12px; border-bottom:1px solid var(--line);}
+.tab{
+  padding:8px 4px; margin-right:18px; font-size:15.62px; color:var(--text-dim); cursor:pointer;
+  border-bottom:2px solid transparent; font-weight:500; background:none; border-top:none; border-left:none; border-right:none; font-family:'Inter';
+}
+.tab.active{color:var(--gold); border-bottom-color:var(--gold);}
+
+/* ===== cards / tables ===== */
+.panel{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:14px 16px;}
+.panel + .panel{margin-top:12px;}
+.grid-2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+.field label{display:block; font-size:13.75px; color:var(--text-dim); margin-bottom:4px;}
+.field input, .field select{
+  width:100%; background:var(--well); border:1px solid var(--line-strong); border-radius:7px;
+  padding:8px 10px; color:var(--text); font-size:15.62px; font-family:'Inter';
+}
+.field input:focus, .field select:focus{outline:none; border-color:var(--gold);}
+.field{margin-bottom:9px;}
+
+.stu-list{display:flex; flex-direction:column; gap:7px; margin-top:4px; max-height:220px; overflow-y:auto; -webkit-overflow-scrolling:touch;}
+.stu-row{
+  display:flex; align-items:center; gap:11px; padding:9px 11px; background:var(--well);
+  border:1px solid var(--line); border-radius:9px;
+}
+.stu-avatar{
+  width:30px; height:30px; border-radius:8px; background:var(--panel-hi); border:1px solid var(--line); display:flex; align-items:center; justify-content:center;
+  font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14.38px; color:var(--gold); flex-shrink:0;
+}
+.stu-info{flex:1; min-width:0;}
+.stu-info .nm{font-size:15.62px; font-weight:600;}
+.stu-info .meta{font-size:13.12px; color:var(--text-dim); margin-top:1px;}
+.stu-info .meta .code{font-family:'JetBrains Mono',monospace; color:var(--text-faint);}
+.stu-actions{display:flex; gap:6px; flex-shrink:0;}
+.icon-btn{
+  width:27px; height:27px; border-radius:7px; border:1px solid var(--line-strong); background:transparent;
+  display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-dim);
+}
+.icon-btn:hover{border-color:var(--gold); color:var(--gold);}
+.icon-btn svg{width:13px; height:13px;}
+
+.empty{text-align:center; padding:22px 16px; color:var(--text-faint);}
+.empty svg{width:26px; height:26px; margin-bottom:8px; opacity:0.5;}
+.empty p{font-size:15px;}
+
+/* qr modal */
+.overlay{
+  position:fixed; inset:0; background:rgba(10,16,28,0.72); backdrop-filter:blur(4px);
+  display:flex; align-items:center; justify-content:center; z-index:100; padding:20px;
+}
+.qr-modal{
+  background:var(--panel); border:1px solid var(--line-strong); border-radius:var(--radius);
+  padding:18px; max-width:280px; width:100%; text-align:center;
+}
+.id-card{
+  background:linear-gradient(160deg, #0D3A5C, #061A2B); border:1px solid var(--gold-dim); border-radius:11px;
+  padding:14px; margin-bottom:12px;
+}
+.id-card .school{font-size:11.25px; letter-spacing:1.2px; color:var(--green); text-transform:uppercase; margin-bottom:10px; font-family:'JetBrains Mono';}
+.id-card .qr-box{background:#fff; padding:8px; border-radius:7px; display:inline-block; margin-bottom:10px;}
+.id-card .nm{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:17.5px; color:#EAF4FA;}
+.id-card .cls{font-size:13.75px; color:#AFCBDB; margin-top:2px;}
+.id-card .code{font-family:'JetBrains Mono',monospace; font-size:12.5px; color:rgba(225,230,240,0.55); margin-top:6px;}
+.modal-actions{display:flex; gap:8px;}
+
+/* riwayat table */
+.log-list{max-height:280px; overflow-y:auto; -webkit-overflow-scrolling:touch;}
+.log-row{
+  display:grid; grid-template-columns:60px 1fr 80px 95px 1fr; gap:10px; align-items:center;
+  padding:8px 10px; border-bottom:1px solid var(--line); font-size:14.38px;
+}
+.log-row.head{color:var(--text-faint); font-size:11.88px; text-transform:uppercase; letter-spacing:0.5px; font-family:'JetBrains Mono';}
+.log-time{font-family:'JetBrains Mono',monospace; color:var(--text-dim); font-size:13.75px;}
+.pill{display:inline-flex; align-items:center; padding:2px 8px; border-radius:20px; font-size:12.5px; font-weight:600;}
+.pill.masuk{background:rgba(27,138,138,0.15); color:var(--green);}
+.pill.pulang{background:rgba(15,92,140,0.15); color:var(--gold);}
+.pill.manual{background:rgba(192,96,75,0.15); color:var(--rust);}
+.pill.ket-Hadir{background:rgba(27,138,138,0.12); color:var(--green);}
+.pill.ket-Sakit{background:rgba(91,123,150,0.16); color:#5B7B96;}
+.pill.ket-Ijin{background:rgba(122,92,150,0.15); color:#7A5C96;}
+.pill.ket-Alpa, .pill.ket-Bolos{background:rgba(192,96,75,0.15); color:var(--rust);}
+.pill.ket-Emergency{background:rgba(192,96,75,0.28); color:#8A3420;}
+.pill.ket-Lainnya{background:rgba(27,42,61,0.08); color:var(--text-dim);}
+.wa-tag{font-size:14.38px; color:var(--text-faint); display:flex; align-items:center; gap:5px;}
+.wa-tag svg{width:12px; height:12px;}
+
+/* ===== petugas: mode select ===== */
+.mode-select{
+  display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; max-width:760px; margin:18px auto 0;
+}
+.mode-card{
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  padding:18px 14px; text-align:center; cursor:pointer; transition:all .18s ease;
+}
+.mode-card:hover{transform:translateY(-3px); border-color:var(--line-strong);}
+.mode-card .m-icon{width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 10px;}
+.mode-card.masuk .m-icon{background:rgba(27,138,138,0.12); border:1px solid rgba(27,138,138,0.3);}
+.mode-card.pulang .m-icon{background:rgba(15,92,140,0.12); border:1px solid rgba(15,92,140,0.3);}
+.mode-card.manual .m-icon{background:rgba(192,96,75,0.12); border:1px solid rgba(192,96,75,0.3);}
+.mode-card.alpa .m-icon{background:rgba(192,96,75,0.12); border:1px solid rgba(192,96,75,0.3);}
+.mode-card .m-icon svg{width:19px; height:19px;}
+.mode-card h4{font-family:'Space Grotesk',sans-serif; font-size:17.5px; margin-bottom:4px;}
+.mode-card p{font-size:13.75px; color:var(--text-dim);}
+.mode-card .m-badge{
+  display:inline-block; margin-top:8px; font-family:'JetBrains Mono',monospace; font-size:11.25px; letter-spacing:0.6px;
+  color:var(--text-faint); border:1px solid var(--line-strong); border-radius:20px; padding:2px 8px; text-transform:uppercase;
+}
+
+/* ===== petugas: scan screen ===== */
+.scan-layout{display:grid; grid-template-columns:1fr 300px; gap:16px; align-items:start;}
+@media (max-width:860px){.scan-layout{grid-template-columns:1fr;}}
+
+.scan-panel{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:14px; text-align:center;}
+.cam-frame{
+  position:relative; width:100%; aspect-ratio:1/1; max-width:380px; margin:0 auto;
+  background:var(--ink); border-radius:12px; overflow:hidden; border:1px solid var(--line-strong);
+}
+.cam-frame video{width:100%; height:100%; object-fit:cover;}
+.cam-frame .brackets{position:absolute; inset:32px; pointer-events:none;}
+.cam-frame .brackets::before, .cam-frame .brackets::after{content:''; position:absolute; width:40px; height:40px; border:5px solid var(--gold);}
+.cam-frame .brackets::before{top:0; left:0; border-right:none; border-bottom:none; border-radius:10px 0 0 0;}
+.cam-frame .brackets::after{bottom:0; right:0; border-left:none; border-top:none; border-radius:0 0 10px 0;}
+.cam-frame .bracket-tr{position:absolute; top:32px; right:32px; width:40px; height:40px; border:5px solid var(--gold); border-left:none; border-bottom:none; border-radius:0 10px 0 0;}
+.cam-frame .bracket-bl{position:absolute; bottom:32px; left:32px; width:40px; height:40px; border:5px solid var(--gold); border-right:none; border-top:none; border-radius:0 0 0 10px;}
+.cam-frame .scanline{
+  position:absolute; left:32px; right:32px; height:3px; background:linear-gradient(90deg,transparent,var(--green),transparent);
+  animation:scan 2.2s ease-in-out infinite; top:32px;
+}
+@keyframes scan{0%{top:32px;} 50%{top:calc(100% - 32px);} 100%{top:32px;}}
+.cam-frame .cam-off{
+  position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px; color:var(--text-faint);
+}
+.cam-frame .cam-off svg{width:48px; height:48px;}
+.cam-hint{font-size:13.12px; color:var(--text-dim); margin-top:8px;}
+.divider-or{display:flex; align-items:center; gap:10px; margin:12px 0; color:var(--text-faint); font-size:12.5px; letter-spacing:0.8px;}
+.divider-or::before,.divider-or::after{content:''; flex:1; height:1px; background:var(--line);}
+
+/* Notifikasi tulisan (toast) untuk pemindaian gagal/ditolak — tampil melayang di
+   atas layar, terlihat jelas baik saat memindai lewat kamera maupun input manual. */
+.global-toast{
+  position:fixed; left:50%; top:14px; z-index:9999; max-width:92vw;
+  padding:11px 18px; border-radius:11px; font-size:14.38px; font-weight:600; line-height:1.35;
+  text-align:center; color:#fff; box-shadow:0 8px 22px rgba(0,0,0,0.28);
+  opacity:0; pointer-events:none; transform:translate(-50%,-16px);
+  transition:opacity .22s ease, transform .22s ease;
+}
+.global-toast.show{opacity:1; transform:translate(-50%,0);}
+.global-toast.err{background:#B3261E;}
+.global-toast.warn{background:#9A6B08;}
+.global-toast.ok{background:#1E8E5A;}
+
+.search-box{position:relative; margin-bottom:8px;}
+.search-results{max-height:130px; overflow-y:auto; -webkit-overflow-scrolling:touch; display:flex; flex-direction:column; gap:6px;}
+.search-item{
+  display:flex; align-items:center; gap:10px; padding:7px; background:var(--well); border:1px solid var(--line);
+  border-radius:8px; cursor:pointer; text-align:left;
+}
+.search-item:hover{border-color:var(--gold);}
+
+.ket-slot{
+  display:flex; flex-direction:column; gap:3px; padding:9px 10px; background:var(--well); border:1px solid var(--line-strong);
+  border-radius:9px; cursor:pointer; text-align:left; width:100%; font-family:'Inter';
+}
+.ket-slot:hover{border-color:var(--gold);}
+.ket-slot-label{font-size:15.62px; font-weight:600; color:var(--text); display:flex; align-items:center;}
+.ket-slot-info{font-size:13.75px; color:var(--text-dim);}
+.ket-slot.ket-slot-empty{cursor:default; opacity:0.6;}
+.ket-slot.ket-slot-empty:hover{border-color:var(--line-strong);}
+.ket-slot.ket-slot-empty .ket-slot-info{color:var(--text-faint);}
+
+.side-panel{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:14px; max-height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch;}
+.side-panel h4{font-family:'Space Grotesk',sans-serif; font-size:15.62px; margin-bottom:10px; display:flex; align-items:center; gap:6px;}
+.selected-stu{
+  display:flex; align-items:center; gap:10px; padding:10px; background:var(--well); border-radius:9px; margin-bottom:12px; border:1px solid var(--line-strong);
+}
+.selected-stu .stu-avatar{width:34px; height:34px; font-size:15.62px;}
+.ket-grid{display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:10px;}
+.ket-opt{
+  padding:7px 6px; border-radius:8px; border:1px solid var(--line-strong); background:var(--well);
+  font-size:13.75px; text-align:center; cursor:pointer; color:var(--text-dim); font-weight:500;
+}
+.ket-opt.active{border-color:var(--green); color:var(--green); background:rgba(27,138,138,0.14); font-weight:700;}
+.ket-opt-add{border-style:dashed;}
+.ket-opt-add::before{content:'+ '; }
+.ket-opt-add.active::before{content:'✓ '; }
+.side-panel .placeholder{text-align:center; padding:16px 8px; color:var(--text-faint); font-size:14.38px;}
+
+.result-card{text-align:center; padding:4px 2px;}
+.result-icon{width:42px; height:42px; border-radius:50%; margin:0 auto 10px; display:flex; align-items:center; justify-content:center;}
+.result-icon.ok{background:rgba(27,138,138,0.15); border:2px solid var(--green);}
+.result-icon svg{width:20px; height:20px;}
+.result-card h3{font-family:'Space Grotesk',sans-serif; font-size:18.12px; margin-bottom:3px;}
+.result-card p{font-size:13.75px; color:var(--text-dim); margin-bottom:10px;}
+.wa-preview{
+  background:var(--well); border:1px solid var(--line); border-radius:9px; padding:9px; text-align:left;
+  font-size:13.12px; color:var(--text-dim); margin-bottom:10px; line-height:1.45; white-space:pre-wrap; max-height:120px; overflow-y:auto;
+}
+.wa-preview b{color:var(--text);}
+
+::-webkit-scrollbar{width:6px;}
+::-webkit-scrollbar-thumb{background:var(--line-strong); border-radius:6px;}
+
+/* ===== TABLET (layar sedang, sebelum turun ke mode HP) ===== */
+@media (max-width:760px) and (min-width:641px){
+  .mode-select{grid-template-columns:repeat(2, 1fr); max-width:520px;}
+}
+
+.landing{overflow-y:auto; -webkit-overflow-scrolling:touch;}
+.login-wrap{overflow-y:auto; -webkit-overflow-scrolling:touch;}
+
+/* ===== MOBILE / PORTRAIT (Android & iPhone) ===== */
+@media (max-width:640px){
+  html{ -webkit-text-size-adjust:100%; }
+  .topbar{padding:10px 14px; padding-top:calc(10px + env(safe-area-inset-top)); padding-left:calc(14px + env(safe-area-inset-left)); padding-right:calc(14px + env(safe-area-inset-right));}
+  .brand-mark{width:72px; height:72px;}
+  .brand-text .name{font-size:16.38px; max-width:150px; line-height:1.1;}
+  .brand-text .sub{font-size:13.25px;}
+  .clock{display:none;}
+  .server-status{padding:5px; gap:0;}
+  .server-status .label{display:none;}
+  .btn-ghost{padding:6px 10px; font-size:13.75px;}
+
+  .landing{padding:10px 16px; padding-left:calc(16px + env(safe-area-inset-left)); padding-right:calc(16px + env(safe-area-inset-right));}
+  .landing-eyebrow{font-size:11.88px; margin-bottom:8px;}
+  .landing h1{font-size:23.75px; max-width:340px; line-height:1.18;}
+  .landing p.lead{font-size:14.38px; margin-top:8px; max-width:320px;}
+
+  .gate-select{grid-template-columns:1fr; gap:8px; margin-top:12px; max-width:255px;}
+  .gate-select::before{display:none;}
+  .gate-card{padding:10px; display:flex; align-items:center; gap:9px; text-align:left;}
+  .gate-card .gate-icon{margin-bottom:0; width:26px; height:26px; flex-shrink:0;}
+  .gate-card .gate-num{display:none;}
+  .gate-card h3{font-size:13.13px; margin-bottom:2px;}
+  .gate-card p{display:none;}
+  .gate-card .gate-enter{font-size:10.31px; margin-top:2px;}
+  .gate-card > div:not(.gate-icon){flex:1; min-width:0;}
+  .gate-text{display:flex; flex-direction:column;}
+
+  .landing-stats{margin-top:14px; padding-top:10px; gap:18px; max-width:340px;}
+  .stat .n{font-size:20px;}
+  .stat .l{font-size:10.62px;}
+
+  .screen-header{padding:9px 14px; padding-left:calc(14px + env(safe-area-inset-left)); padding-right:calc(14px + env(safe-area-inset-right));}
+  .screen-title{font-size:16.88px;}
+  .screen-body{padding:10px 14px 14px; padding-left:calc(14px + env(safe-area-inset-left)); padding-right:calc(14px + env(safe-area-inset-right)); padding-bottom:calc(14px + env(safe-area-inset-bottom));}
+
+  .grid-2{grid-template-columns:1fr;}
+  .mode-select{grid-template-columns:1fr; max-width:320px; gap:10px;}
+  .mode-card{display:flex; align-items:center; gap:12px; text-align:left; padding:13px 14px;}
+  .mode-card .m-icon{margin:0; flex-shrink:0;}
+  .mode-text{display:flex; flex-direction:column;}
+
+  .scan-layout{grid-template-columns:1fr; gap:12px;}
+  .cam-frame{max-width:300px;}
+  .side-panel{max-height:none;}
+
+  .log-row{grid-template-columns:44px 1fr 54px 58px; gap:5px; font-size:12.5px; padding:7px 8px;}
+  .log-row > div:nth-child(5){display:none;}
+  .pill{padding:2px 6px; font-size:11.25px;}
+
+  /* prevent iOS auto-zoom on focus: inputs need >=16px */
+  input, select{font-size:20px !important;}
+
+  .btn{min-height:40px;}
+  .icon-btn, .ket-opt, .gate-card, .mode-card, .search-item{min-height:36px;}
+}
+
+@media (max-width:360px){
+  .landing h1{font-size:21.25px;}
+  .gate-card h3{font-size:16.25px;}
+}
+
+.footer-note{
+  text-align:center; padding:8px 16px; font-size:12.5px; color:var(--text-faint); border-top:1px solid var(--line);
+  flex-shrink:0; padding-bottom:calc(8px + env(safe-area-inset-bottom));
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ================= ICONS ================= */
+const LOGO_DATA_URI = 'data:image/png;base64,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';
+
+const ICON = {
+  gate:`<svg viewBox="0 0 24 24" fill="none" stroke="var(--on-accent)" stroke-width="2"><path d="M4 21V7l8-4 8 4v14"/><path d="M4 10h16"/><path d="M9 21v-7h6v7"/></svg>`,
+  admin:`<svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.8"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c1.5-4 4.5-6 7-6s5.5 2 7 6"/><path d="M17 4l1.3 1.3L21 3"/></svg>`,
+  petugas:`<svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 8h3v3H8zM13 8h3M8 14h8"/></svg>`,
+  arrow:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg>`,
+  back:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>`,
+  lock:`<svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.8"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>`,
+  plus:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>`,
+  qr:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM19 14h2v2M14 19h2v2M19 19h2"/></svg>`,
+  trash:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2m2 0v13a2 2 0 01-2 2H9a2 2 0 01-2-2V7"/></svg>`,
+  camOff:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3l18 18M9 7h6l2 3h2a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1v-4"/></svg>`,
+  check:`<svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>`,
+  wa:`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 00-8.6 15L2 22l5.2-1.4A10 10 0 1012 2zm0 18a8 8 0 01-4.1-1.1l-.3-.2-3.1.8.8-3-.2-.3A8 8 0 1112 20zm4.4-6c-.2-.1-1.4-.7-1.6-.8s-.4-.1-.5.1-.6.8-.7.9-.3.2-.5.1a6.5 6.5 0 01-3.2-2.8c-.2-.4.2-.4.6-1.2a.4.4 0 000-.4c-.1-.1-.5-1.2-.7-1.6s-.4-.4-.5-.4h-.5a.9.9 0 00-.7.3 2.7 2.7 0 00-.8 2 4.7 4.7 0 001 2.5 10.8 10.8 0 004.1 3.6c1.5.6 2.1.7 2.8.6a2.4 2.4 0 001.6-1.1 2 2 0 00.1-1.1c-.1-.1-.2-.2-.5-.3z"/></svg>`,
+  search:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>`,
+  masuk:`<svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>`,
+  pulang:`<svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>`,
+  manual:`<svg viewBox="0 0 24 24" fill="none" stroke="var(--rust)" stroke-width="1.8"><path d="M9 3h6a1 1 0 011 1v1h1a1 1 0 011 1v13a2 2 0 01-2 2H6a2 2 0 01-2-2V6a1 1 0 011-1h1V4a1 1 0 011-1z"/><path d="M9 3h6v3H9z"/><path d="M8 12h5M8 16h8M8 9h3"/></svg>`,
+  alpa:`<svg viewBox="0 0 24 24" fill="none" stroke="var(--rust)" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M18 8l4 4M22 8l-4 4"/></svg>`,
+  empty:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 12h8"/></svg>`,
+  download:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 21h16"/></svg>`,
+  upload:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21V9m0 0l-4 4m4-4l4 4"/><path d="M4 3h16"/></svg>`,
+  logo:`<svg viewBox="0 0 24 24" fill="none" stroke="var(--on-accent)" stroke-width="2"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><path d="M14 14h6v6h-6z"/></svg>`,
+};
+
+/* ================= KONFIGURASI SERVER ================= */
+// Isi dengan URL Web App hasil Deploy dari Code.gs (diakhiri /exec), dan
+// password (API_PASSWORD) yang sama dengan yang ditulis di Code.gs.
+// Selama dua nilai ini kosong, verifikasi PIN akan menampilkan pesan
+// "server belum terhubung" alih-alih diam-diam menerima PIN apa pun.
+const API_URL = 'https://script.google.com/macros/s/AKfycbypBpqsPB8LvbqSDX-fa4vfpDVXoscSAzfJq1FbAK3Ptyy2AIkC_vuN8cgpMs6FHp_7YQ/exec'; // contoh: 'https://script.google.com/macros/s/xxxxx/exec'
+const API_KEY = 'SMA04T'; // samakan dengan API_PASSWORD di Code.gs
+
+async function callApi(payload){
+  if(!API_URL){ throw new Error('SERVER_BELUM_DIKONFIGURASI'); }
+  const res = await fetch(API_URL, {
+    method:'POST',
+    headers:{ 'Content-Type':'text/plain;charset=utf-8' }, // hindari CORS preflight Apps Script
+    body: JSON.stringify({ ...payload, key: API_KEY })
+  });
+  const json = await res.json();
+  if(!json.ok){
+    const err = new Error(json.error || 'Permintaan ditolak server.');
+    // Tandai error ini sebagai penolakan DUPLIKAT (bukan sekadar gagal jaringan)
+    // supaya pemanggil (tickScan/confirmManualAttendance) bisa menampilkan
+    // notifikasi yang tepat — bukan menganggapnya berhasil secara diam-diam.
+    if(json.duplicate){ err.duplicate = true; err.existing = json.existing; }
+    throw err;
+  }
+  return json;
+}
+
+/* ================= STATUS KONEKSI SERVER (lampu indikator) ================= */
+function serverStatusBadgeHtml(){
+  const cfgMap = {
+    checking:    { cls:'checking', label:'Memeriksa Server...' },
+    connected:   { cls:'on',       label:'Server Tersambung' },
+    disconnected:{ cls:'off',      label:'Server Terputus' },
+    unconfigured:{ cls:'off',      label:'Server Belum Diatur' },
+  };
+  const cfg = cfgMap[state.serverStatus] || cfgMap.disconnected;
+  return `<div class="server-status ${cfg.cls}" id="serverStatusBadge" title="${cfg.label}"><span class="dot"></span><span class="label">${cfg.label}</span></div>`;
+}
+
+function updateServerStatusBadge(){
+  const el = document.getElementById('serverStatusBadge');
+  if(el) el.outerHTML = serverStatusBadgeHtml();
+}
+
+async function checkServerStatus(){
+  if(!API_URL){
+    state.serverStatus = 'unconfigured';
+    updateServerStatusBadge();
+    return;
+  }
+  state.serverStatus = 'checking';
+  updateServerStatusBadge();
+  try{
+    const res = await fetch(`${API_URL}?action=ping&key=${encodeURIComponent(API_KEY)}`);
+    const json = await res.json();
+    state.serverStatus = (json && json.ok) ? 'connected' : 'disconnected';
+  }catch(e){
+    state.serverStatus = 'disconnected';
+  }
+  updateServerStatusBadge();
+}
+
+/* ================= STATE ================= */
+const KET_OPTIONS = ["Hadir","Sakit","Ijin","Alpa","Bolos","Emergency","Lainnya"];
+const MANUAL_KET_OPTIONS = ["Sakit","Ijin","Bolos","Emergency","Lainnya"];
+// Label tampilan tombol keterangan — nilai "Lainnya" tetap dipakai secara
+// internal (menentukan kapan kotak teks bebas muncul), tapi ditampilkan ke
+// operator sebagai tombol "+ Tambah Keterangan" supaya jelas fungsinya:
+// menulis keterangan sendiri, bukan salah satu daftar preset.
+function ketOptionLabel(k){ return k === 'Lainnya' ? 'Tambah Keterangan' : k; }
+let state = {
+  screen:'landing',
+  students:[],
+  logs:[],
+  adminUnlocked:false,
+  petugasUnlocked:false,
+  pinLoading:false,
+  serverStatus:'checking', // 'checking' | 'connected' | 'disconnected' | 'unconfigured'
+  adminTab:'siswa',
+  petugasMode:null, // 'masuk' | 'pulang' | 'manual' | 'manualMasuk' | 'manualPulang'
+  selectedStudent:null,
+  selectedKet:'Hadir',
+  selectedKetTarget:null, // 'masuk' | 'pulang' — catatan hari ini yang sedang diberi keterangan tambahan (mode Input Manual)
+  lainnyaNote:'',
+  qrModalStudent:null,
+  importPreview:null,
+  cameraStream:null,
+  cameraActive:false,
+  torchOn:false,
+  lastResult:null,
+  searchQuery:'',
+  scanCooldowns:{}, // { [kodeQR]: timestampBerakhirnyaJeda } — jeda per-kode QR
+  sendWaNotif:true,
+};
+
+const STUDENTS_KEY = 'sigap_students_v1';
+const LOG_MONTHS_TO_LOAD = 6; // tampilkan riwayat 6 bulan terakhir di panel Admin
+
+function monthKeyOf(ts){
+  const d = new Date(ts);
+  return `sigap_logs_${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+function currentMonthKey(){ return monthKeyOf(Date.now()); }
+
+async function loadData(){
+  // --- muat data siswa: dari server (Google Sheets) jika sudah terhubung,
+  //     jika belum/kalau gagal, pakai penyimpanan lokal sebagai cadangan ---
+  let loadedFromServer = false;
+  if(API_URL){
+    try{
+      state.students = await fetchStudentsFromServer();
+      loadedFromServer = true;
+    }catch(e){
+      /* gagal memuat data siswa dari server, memakai data lokal sebagai cadangan */
+    }
+  }
+  if(!loadedFromServer){
+    try{
+      const r = await window.storage.get(STUDENTS_KEY, false);
+      if(r && r.value) state.students = JSON.parse(r.value) || [];
+    }catch(e){ /* belum ada data siswa */ }
+  }
+
+  // --- muat riwayat gerbang: dari server (Google Sheets) jika sudah terhubung,
+  //     jika belum/kalau gagal, pakai penyimpanan lokal per-bulan sebagai cadangan ---
+  let logsFromServer = false;
+  if(API_URL){
+    try{
+      state.logs = await fetchLogsFromServer();
+      logsFromServer = true;
+    }catch(e){
+      /* gagal memuat riwayat dari server, memakai data lokal sebagai cadangan */
+    }
+  }
+  if(!logsFromServer){
+    try{
+      const listed = await window.storage.list('sigap_logs_', false);
+      const monthKeys = (listed && listed.keys ? listed.keys : []).sort().reverse().slice(0, LOG_MONTHS_TO_LOAD);
+      let allLogs = [];
+      for(const k of monthKeys){
+        try{
+          const r = await window.storage.get(k, false);
+          if(r && r.value){ allLogs = allLogs.concat(JSON.parse(r.value) || []); }
+        }catch(e){ /* lewati bulan ini jika gagal dibaca */ }
+      }
+      state.logs = allLogs;
+    }catch(e){ /* belum ada riwayat sama sekali */ }
+  }
+
+  render();
+}
+
+async function fetchStudentsFromServer(){
+  const res = await fetch(`${API_URL}?action=getStudents&key=${encodeURIComponent(API_KEY)}`);
+  const json = await res.json();
+  if(!json.ok) throw new Error(json.error || 'Gagal memuat data siswa dari server.');
+  return json.data || [];
+}
+
+async function fetchLogsFromServer(){
+  const res = await fetch(`${API_URL}?action=getRecentLogs&key=${encodeURIComponent(API_KEY)}&months=${LOG_MONTHS_TO_LOAD}`);
+  const json = await res.json();
+  if(!json.ok) throw new Error(json.error || 'Gagal memuat riwayat dari server.');
+  return json.data || [];
+}
+
+async function saveStudents(){
+  try{
+    await window.storage.set(STUDENTS_KEY, JSON.stringify(state.students), false);
+  }catch(e){ /* gagal menyimpan data siswa */ }
+}
+
+// Mengirim catatan Masuk/Pulang/Alpa ke SERVER dan MENUNGGU konfirmasinya —
+// inilah kunci pencegahan pemindaian ganda LINTAS PERANGKAT: server (bukan
+// cache lokal HP ini) yang memutuskan apakah siswa ini sudah tercatat hari
+// ini oleh perangkat lain. Mengembalikan salah satu dari:
+//   { ok:true }                          — tersimpan & terverifikasi server
+//   { ok:false, duplicate:true, existing } — DITOLAK, sudah tercatat (di
+//                                            perangkat manapun) — `existing`
+//                                            dipakai untuk menyelaraskan
+//                                            cache lokal & pesan notifikasi
+//   { ok:true, offline:true }            — server tak terjangkau, tersimpan
+//                                            LOKAL saja (tidak terverifikasi
+//                                            lintas perangkat)
+async function saveLogEntry(log){
+  if(API_URL){
+    try{
+      await callApi({ action:'addLog', log });
+      return { ok:true };
+    }catch(e){
+      if(e.duplicate){
+        return { ok:false, duplicate:true, existing:e.existing };
+      }
+      // gagal karena sebab lain (jaringan/server) — lanjut ke penyimpanan
+      // lokal di bawah supaya catatan tidak hilang, tapi ditandai `offline`
+      // karena TIDAK bisa dijamin bebas duplikat lintas perangkat.
+    }
+  }
+  const key = monthKeyOf(log.timestamp);
+  try{
+    let monthLogs = [];
+    try{
+      const r = await window.storage.get(key, false);
+      if(r && r.value) monthLogs = JSON.parse(r.value) || [];
+    }catch(e){ /* bulan ini belum punya data */ }
+    monthLogs.push(log);
+    await window.storage.set(key, JSON.stringify(monthLogs), false);
+  }catch(e){ /* gagal menyimpan catatan gerbang */ }
+  return { ok:true, offline:!API_URL ? undefined : true };
+}
+
+// Memperbarui keterangan (ket/note) pada catatan masuk/pulang yang SUDAH ADA —
+// dipakai oleh mode "Input Manual" (keterangan tambahan bersifat opsional),
+// bukan membuat baris riwayat baru.
+async function updateLogEntry(log){
+  if(API_URL){
+    try{
+      await callApi({ action:'updateLog', log });
+      return;
+    }catch(e){
+      // lanjut ke penyimpanan lokal di bawah supaya perubahan tidak hilang
+    }
+  }
+  const key = monthKeyOf(log.timestamp);
+  try{
+    let monthLogs = [];
+    try{
+      const r = await window.storage.get(key, false);
+      if(r && r.value) monthLogs = JSON.parse(r.value) || [];
+    }catch(e){ /* bulan ini belum punya data */ }
+    const idx = monthLogs.findIndex(l=>l.id===log.id);
+    if(idx>=0){ monthLogs[idx] = log; } else { monthLogs.push(log); }
+    await window.storage.set(key, JSON.stringify(monthLogs), false);
+  }catch(e){ /* gagal menyimpan perubahan keterangan */ }
+}
+
+function uid(){ return Math.random().toString(36).slice(2,9); }
+function genCode(){ return 'S4T-' + Math.random().toString(36).slice(2,7).toUpperCase(); }
+function initials(name){ return name.trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
+function nowStr(){ return new Date().toLocaleString('id-ID',{weekday:'short',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }
+function timeOnly(ts){ return new Date(ts).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}); }
+function dateOnly(ts){ return new Date(ts).toLocaleDateString('id-ID',{day:'2-digit',month:'short'}); }
+
+function waLink(phone, text){
+  let p = (phone||'').replace(/[^0-9]/g,'');
+  if(p.startsWith('0')) p = '62' + p.slice(1);
+  if(!p.startsWith('62')) p = '62' + p;
+  return `https://wa.me/${p}?text=${encodeURIComponent(text)}`;
+}
+
+function buildWaMessage(student, type, ket, note){
+  const displayKet = ket || 'Hadir';
+  let msg = `*CATATAN PRESENSI SISWA-SISWI*\n*SMAN 4 Kota Ternate*\n\nAssalamu'alaikum, Bapak/Ibu Wali dari *${student.name}* (${student.kelas}).\n\n`;
+  if(type === 'manual'){
+    msg += `Keterangan: *${displayKet}*\nWaktu dicatat: ${nowStr()} WIT`;
+  }else{
+    const label = type === 'masuk' ? 'TIBA DI SEKOLAH' : 'PULANG SEKOLAH';
+    msg += `Status: *${label}*\nWaktu: ${nowStr()} WIT`;
+    // Baris "Keterangan" hanya ditampilkan jika ada catatan khusus (Sakit/Ijin/dll)
+    // yang ditambahkan lewat Input Manual (Keterangan) — pemindaian masuk/pulang
+    // biasa tidak membawa keterangan apa pun.
+    if(ket && ket !== 'Hadir'){ msg += `\nKeterangan: *${displayKet}*`; }
+  }
+  if(ket === 'Lainnya' && note) msg += ` — ${note}`;
+  if(ket && ket !== 'Hadir') msg += `\n\nMohon menjadi perhatian Bapak/Ibu.`;
+  msg += `\n\nPesan otomatis, mohon tidak dibalas.`;
+  return msg;
+}
+
+/* ================= RENDER ROOT ================= */
+function render(){
+  const app = document.getElementById('app');
+  app.innerHTML = topbar() + `<main>${routeScreen()}</main>` + (state.screen==='landing' ? footer() : '');
+  bindGlobalEvents();
+  afterRender();
+}
+
+function topbar(){
+  return `
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark"><img src="${LOGO_DATA_URI}" alt="Logo SMAN 4 Kota Ternate"></div>
+      <div class="brand-text">
+        <div class="name">CATATAN PRESENSI SISWA-SISWI</div>
+        <div class="sub">SMAN 4 Kota Ternate</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      ${serverStatusBadgeHtml()}
+      <div class="clock mono"><b id="liveClock">--:--</b><span id="liveDate">--</span></div>
+      ${state.screen!=='landing' ? `<button class="btn-ghost" id="btnHome">Beranda</button>`:''}
+    </div>
+  </div>`;
+}
+
+function footer(){
+  return `<div class="footer-note">Notifikasi WhatsApp dikirim manual oleh Scanner Operator melalui tautan wa.me — data tersimpan di penyimpanan pribadi akun ini.</div>`;
+}
+
+function routeScreen(){
+  switch(state.screen){
+    case 'landing': return screenLanding();
+    case 'adminLogin': return screenLogin();
+    case 'petugasLogin': return screenLogin();
+    case 'admin': return screenAdmin();
+    case 'petugasMode': return screenPetugasMode();
+    case 'petugasScan': return screenPetugasScan();
+    default: return screenLanding();
+  }
+}
+
+/* ================= LANDING ================= */
+function screenLanding(){
+  return `
+  <div class="landing">
+    <div class="landing-eyebrow"><span class="dot"></span> SISTEM GERBANG AKTIF</div>
+    <h1>Gerbang pintar untuk <span>pengawasan siswa</span> yang terhubung ke orang tua</h1>
+    <p class="lead">Pindai kartu QR siswa saat masuk dan pulang sekolah. Setiap catatan kehadiran otomatis disiapkan sebagai notifikasi WhatsApp untuk orang tua/wali.</p>
+
+    <div class="gate-select">
+      <button class="gate-card admin" id="gotoAdminLogin">
+        <span class="gate-num">Gerbang 01</span>
+        <div class="gate-icon">${ICON.admin}</div>
+        <div class="gate-text">
+          <h3>Admin</h3>
+          <p>Kelola data siswa, cetak kartu QR, dan pantau riwayat kehadiran dari seluruh gerbang.</p>
+          <span class="gate-enter">Masuk sebagai Admin ${ICON.arrow}</span>
+        </div>
+      </button>
+      <button class="gate-card petugas" id="gotoPetugas">
+        <span class="gate-num">Gerbang 02</span>
+        <div class="gate-icon">${ICON.petugas}</div>
+        <div class="gate-text">
+          <h3>Scanner Operator</h3>
+          <p>Pindai QR siswa untuk mencatat kehadiran masuk atau pulang, lengkap dengan keterangan.</p>
+          <span class="gate-enter">Masuk sebagai Scanner Operator ${ICON.arrow}</span>
+        </div>
+      </button>
+    </div>
+
+    <div class="landing-stats">
+      <div class="stat"><div class="n">${state.students.length}</div><div class="l">SISWA TERDAFTAR</div></div>
+      <div class="stat"><div class="n">${state.logs.filter(l=>isToday(l.timestamp)).length}</div><div class="l">CATATAN HARI INI</div></div>
+      <div class="stat"><div class="n">${state.logs.filter(l=>isToday(l.timestamp) && l.type==='masuk').length}</div><div class="l">SUDAH MASUK</div></div>
+    </div>
+
+    <div class="landing-copyright">Copyright &copy; 2026 SMA Negeri 4 Kota Ternate. Developed by Taslim Siolimbona, S.Pd.</div>
+  </div>`;
+}
+function isToday(ts){ const d=new Date(ts), t=new Date(); return d.toDateString()===t.toDateString(); }
+
+// Ambil catatan Masuk & Pulang milik siswa untuk HARI INI (dari pemindaian QR
+// maupun Input Manual Masuk/Pulang) — dipakai mode Input Manual (keterangan)
+// untuk menentukan catatan mana yang boleh diberi keterangan tambahan.
+function todayLogsFor(studentId){
+  const todays = state.logs.filter(l=> l.studentId===studentId && isToday(l.timestamp) && (l.type==='masuk'||l.type==='pulang'));
+  const latestOf = type => todays.filter(l=>l.type===type).sort((a,b)=>b.timestamp-a.timestamp)[0] || null;
+  return { masuk: latestOf('masuk'), pulang: latestOf('pulang') };
+}
+
+/* ================= LOGIN PIN (Admin & Petugas) ================= */
+function screenLogin(){
+  const role = state.screen === 'petugasLogin' ? 'petugas' : 'admin';
+  const title = role === 'admin' ? 'Verifikasi Admin' : 'Verifikasi Scanner Operator';
+  const heading = role === 'admin' ? 'Masuk sebagai Admin' : 'Masuk sebagai Scanner Operator';
+  const desc = role === 'admin' ? 'Masukkan PIN akses untuk mengelola data gerbang.' : 'Masukkan PIN akses untuk mulai memindai kehadiran siswa.';
+  const btnLabel = role === 'admin' ? 'Buka Panel Admin' : 'Buka Panel Scanner Operator';
+  return `
+  <div class="screen">
+    ${screenHeaderBar(title)}
+    <div class="login-wrap">
+      <div class="login-card">
+        <div class="lock">${ICON.lock}</div>
+        <h3>${heading}</h3>
+        <p>${desc}</p>
+        <input type="password" inputmode="text" autocapitalize="none" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="6" class="pin-input" id="pinInput" placeholder="••••" ${state.pinLoading?'disabled':''}>
+        <div class="err-msg" id="pinErr"></div>
+        <button class="btn btn-gold btn-block" id="pinSubmit" ${state.pinLoading?'disabled':''}>${state.pinLoading?'Memeriksa...':btnLabel}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function screenHeaderBar(title){
+  return `
+  <div class="screen-header">
+    <button class="back" id="btnBack">${ICON.back} Kembali</button>
+    <div class="screen-title">${title}</div>
+    <div style="width:80px"></div>
+  </div>`;
+}
+
+/* ================= ADMIN PANEL ================= */
+function screenAdmin(){
+  return `
+  <div class="screen">
+    ${screenHeaderBar('Panel Admin <span class="tag">GERBANG 01</span>')}
+    <div class="screen-body">
+      <div class="tabs">
+        <button class="tab ${state.adminTab==='siswa'?'active':''}" data-tab="siswa">Data Siswa</button>
+        <button class="tab ${state.adminTab==='riwayat'?'active':''}" data-tab="riwayat">Riwayat Gerbang</button>
+      </div>
+      ${state.adminTab==='siswa' ? adminSiswaTab() : adminRiwayatTab()}
+    </div>
+  </div>
+  ${state.qrModalStudent ? qrModal(state.qrModalStudent) : ''}
+  ${state.importPreview ? importModal() : ''}
+  `;
+}
+
+function adminSiswaTab(){
+  return `
+  <div class="panel">
+    <h4 style="font-family:'Space Grotesk';font-size:18.75px;margin-bottom:14px;">Tambah Siswa Baru</h4>
+    <div class="grid-2">
+      <div class="field"><label>Kelas</label><input id="fKelas" placeholder="Contoh: XI-2"></div>
+      <div class="field"><label>Nama Lengkap Siswa</label><input id="fName" placeholder="Contoh: Ahmad Fahri"></div>
+      <div class="field"><label>NISN Siswa</label><input id="fNisn" inputmode="numeric" maxlength="10" placeholder="Contoh: 0051234567"></div>
+      <div class="field"><label>No. WhatsApp Orang Tua</label><input id="fWa" placeholder="Contoh: 0812xxxxxxx"></div>
+    </div>
+    <button class="btn btn-gold" id="btnAddStudent">${ICON.plus} Tambah &amp; Buat Kartu QR</button>
+  </div>
+  <div class="panel">
+    <h4 style="font-family:'Space Grotesk';font-size:18.75px;margin-bottom:6px;">Impor Massal dari Spreadsheet</h4>
+    <p style="font-size:15px;color:var(--text-dim);margin-bottom:12px;line-height:1.5;">Tambahkan banyak siswa sekaligus dari file Excel (.xlsx/.xls) atau CSV. Kolom yang dikenali otomatis (urutan bebas): <b>Kelas</b>, <b>Nama</b>, <b>NISN</b>, <b>No WA Orang Tua</b>.</p>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn btn-outline btn-sm" id="btnDownloadTemplate">${ICON.download} Unduh Template</button>
+      <button class="btn btn-gold btn-sm" id="btnPickImportFile">${ICON.upload} Pilih File Spreadsheet</button>
+      <input type="file" id="importFileInput" accept=".xlsx,.xls,.csv" style="display:none;">
+    </div>
+  </div>
+  ${state.students.length ? `
+  <div class="panel">
+    <h4 style="font-family:'Space Grotesk';font-size:18.75px;margin-bottom:6px;">Unduh Kartu QR Massal</h4>
+    <p style="font-size:15px;color:var(--text-dim);margin-bottom:12px;line-height:1.5;">Unduh banyak kartu QR sekaligus dalam satu file ZIP (satu file PNG per siswa) — untuk semua siswa atau satu kelas saja.</p>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+      <select id="qrBulkKelas" style="background:var(--well);border:1px solid var(--line-strong);border-radius:7px;padding:8px 10px;color:var(--text);font-size:15px;">
+        <option value="">Semua Kelas (${state.students.length} siswa)</option>
+        ${uniqueKelasList().map(k=>`<option value="${escapeHtml(k)}">${escapeHtml(k)} (${state.students.filter(s=>s.kelas===k).length} siswa)</option>`).join('')}
+      </select>
+      <button class="btn btn-gold btn-sm" id="btnDownloadAllQr">${ICON.download} Unduh Kartu QR (ZIP)</button>
+    </div>
+  </div>` : ''}
+  <div class="panel">
+    <h4 style="font-family:'Space Grotesk';font-size:18.75px;margin-bottom:14px;">Daftar Siswa (${state.students.length})</h4>
+    ${state.students.length===0 ? emptyState('Belum ada siswa terdaftar.') : `
+    <div class="stu-list">
+      ${state.students.map(s=>`
+        <div class="stu-row">
+          <div class="stu-avatar">${initials(s.name)}</div>
+          <div class="stu-info">
+            <div class="nm">${escapeHtml(s.name)}</div>
+            <div class="meta">${escapeHtml(s.kelas)} · <span class="code">${s.code}</span> · ${escapeHtml(s.parentWA||'-')}</div>
+          </div>
+          <div class="stu-actions">
+            <button class="icon-btn" title="Lihat Kartu QR" data-qr="${s.id}">${ICON.qr}</button>
+            <button class="icon-btn" title="Hapus" data-del="${s.id}">${ICON.trash}</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>`}
+  </div>`;
+}
+
+function uniqueKelasList(){
+  const set = new Set(state.students.map(s=>s.kelas).filter(Boolean));
+  return Array.from(set).sort((a,b)=> a.localeCompare(b, 'id'));
+}
+
+function adminRiwayatTab(){
+  // Urutkan Data Absen berdasarkan KELAS (paling awal → paling akhir), lalu di
+  // dalam kelas yang sama diurutkan ABJAD nama siswa A–Z. {numeric:true} membuat
+  // urutan kelas dengan angka (mis. "XI-2" vs "XI-10") terbaca sesuai urutan
+  // angkanya, bukan sekadar urutan huruf. Waktu pemindaian hanya jadi penentu
+  // terakhir (untuk siswa yang sama, Masuk tetap tampil sebelum Pulang).
+  const logs = [...state.logs].sort((a,b)=>{
+    const sa = state.students.find(x=>x.id===a.studentId);
+    const sb = state.students.find(x=>x.id===b.studentId);
+    const kelasCmp = String(sa?sa.kelas:'').localeCompare(String(sb?sb.kelas:''), 'id', {numeric:true, sensitivity:'base'});
+    if(kelasCmp !== 0) return kelasCmp;
+    const nameCmp = String(sa?sa.name:'').localeCompare(String(sb?sb.name:''), 'id', {sensitivity:'base'});
+    if(nameCmp !== 0) return nameCmp;
+    return a.timestamp - b.timestamp;
+  });
+  return `
+  <div class="panel">
+    <h4 style="font-family:'Space Grotesk';font-size:18.75px;margin-bottom:6px;">Riwayat Gerbang</h4>
+    ${logs.length===0 ? emptyState('Belum ada catatan pemindaian.') : `
+    <div class="log-list">
+      <div class="log-row head"><div>Waktu</div><div>Siswa</div><div>Mode</div><div>Keterangan</div><div>Catatan</div></div>
+      ${logs.map(l=>{
+        const s = state.students.find(x=>x.id===l.studentId);
+        return `<div class="log-row">
+          <div class="log-time">${dateOnly(l.timestamp)}<br>${timeOnly(l.timestamp)}</div>
+          <div>${s?escapeHtml(s.name):'(dihapus)'}${s?`<br><span style="font-size:12.5px;color:var(--text-faint);">${escapeHtml(s.kelas)}</span>`:''}</div>
+          <div><span class="pill ${l.type}">${l.type==='masuk'?'Masuk':l.type==='pulang'?'Pulang':'Manual'}</span></div>
+          <div><span class="pill ket-${l.ket||'Hadir'}">${l.ket||'Hadir'}</span></div>
+          <div style="color:var(--text-faint); font-size:15px;">${escapeHtml(l.note||'')}</div>
+        </div>`;
+      }).join('')}
+    </div>`}
+  </div>`;
+}
+
+function qrModal(student){
+  return `
+  <div class="overlay" id="qrOverlay">
+    <div class="qr-modal">
+      <div class="id-card">
+        <img src="${LOGO_DATA_URI}" alt="Logo SMAN 4 Kota Ternate" style="width:99px;height:99px;object-fit:contain;margin-bottom:8px;">
+        <div class="school">SMAN 4 Kota Ternate</div>
+        <div class="qr-box" id="qrCanvasHolder"></div>
+        <div class="nm">${escapeHtml(student.name)}</div>
+        <div class="cls">${escapeHtml(student.kelas)}</div>
+        <div class="code">${student.code}</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-outline btn-block" id="btnCloseQr">Tutup</button>
+        <button class="btn btn-gold btn-block" id="btnDownloadQr">Unduh Kartu</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function importModal(){
+  const { valid, errors } = state.importPreview;
+  return `
+  <div class="overlay" id="importOverlay">
+    <div class="qr-modal" style="max-width:460px; text-align:left;">
+      <h3 style="font-family:'Space Grotesk',sans-serif; font-size:20px; margin-bottom:6px;">Pratinjau Impor</h3>
+      <p style="font-size:15.62px; color:var(--text-dim); margin-bottom:10px;">
+        <b style="color:var(--green);">${valid.length} siswa</b> siap diimpor${errors.length ? `, <b style="color:var(--rust);">${errors.length} baris</b> dilewati` : ''}.
+      </p>
+      ${errors.length ? `
+      <div style="max-height:90px; overflow-y:auto; background:var(--well); border:1px solid var(--line); border-radius:9px; padding:8px 10px; margin-bottom:12px; font-size:13.75px; color:var(--rust);">
+        ${errors.slice(0,12).map(e=>`<div>${escapeHtml(e)}</div>`).join('')}
+        ${errors.length>12 ? `<div style="color:var(--text-faint);">...dan ${errors.length-12} baris lainnya</div>` : ''}
+      </div>` : ''}
+      ${valid.length ? `
+      <div class="stu-list" style="max-height:240px; margin-bottom:14px;">
+        ${valid.slice(0,60).map(s=>`
+          <div class="stu-row">
+            <div class="stu-avatar">${initials(s.name)}</div>
+            <div class="stu-info">
+              <div class="nm">${escapeHtml(s.name)}</div>
+              <div class="meta">${escapeHtml(s.kelas)} · NISN ${escapeHtml(s.nisn||'-')} · ${escapeHtml(s.parentWA||'-')}</div>
+            </div>
+          </div>`).join('')}
+        ${valid.length>60 ? `<div style="padding:8px; text-align:center; font-size:13.75px; color:var(--text-faint);">...dan ${valid.length-60} siswa lainnya</div>` : ''}
+      </div>` : `<div style="margin-bottom:14px;">${emptyState('Tidak ada baris valid untuk diimpor. Periksa kembali nama kolom pada file Anda.')}</div>`}
+      <div class="modal-actions">
+        <button class="btn btn-outline btn-block" id="btnCancelImport">Batal</button>
+        <button class="btn btn-gold btn-block" id="btnConfirmImport" ${valid.length===0?'disabled':''}>Impor ${valid.length} Siswa</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function emptyState(text){
+  return `<div class="empty">${ICON.empty}<p>${text}</p></div>`;
+}
+
+/* ================= PETUGAS: pilih mode ================= */
+function screenPetugasMode(){
+  return `
+  <div class="screen">
+    ${screenHeaderBar('Scanner Operator <span class="tag">GERBANG 02</span>')}
+    <div class="screen-body">
+      <p style="text-align:center;color:var(--text-dim);font-size:16.88px;max-width:460px;margin:0 auto;">Pilih jenis pemindaian, atau catat keterangan siswa secara manual tanpa memindai QR.</p>
+      <div class="mode-select">
+        <div class="mode-card masuk" id="modeMasuk">
+          <div class="m-icon">${ICON.masuk}</div>
+          <div class="mode-text"><h4>Pemindai Masuk</h4><p>Catat kedatangan siswa di gerbang sekolah.</p></div>
+        </div>
+        <div class="mode-card pulang" id="modePulang">
+          <div class="m-icon">${ICON.pulang}</div>
+          <div class="mode-text"><h4>Pemindai Pulang</h4><p>Catat kepulangan siswa dari sekolah.</p></div>
+        </div>
+        <div class="mode-card masuk" id="modeManualMasuk">
+          <div class="m-icon">${ICON.masuk}</div>
+          <div class="mode-text"><h4>Input Manual Masuk</h4><p>Catat kedatangan siswa tanpa pindai QR — kartu hilang atau lupa dibawa.</p><span class="m-badge">Tanpa QR</span></div>
+        </div>
+        <div class="mode-card pulang" id="modeManualPulang">
+          <div class="m-icon">${ICON.pulang}</div>
+          <div class="mode-text"><h4>Input Manual Pulang</h4><p>Catat kepulangan siswa tanpa pindai QR — kartu hilang atau lupa dibawa.</p><span class="m-badge">Tanpa QR</span></div>
+        </div>
+        <div class="mode-card manual" id="modeManual">
+          <div class="m-icon">${ICON.manual}</div>
+          <div class="mode-text"><h4>Input Keterangan</h4><p>Tambahkan keterangan opsional (Sakit, Ijin, Bolos, Emergency dll) untuk siswa yang sudah tercatat masuk/pulang — via QR maupun input manual.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ================= PETUGAS: layar scan ================= */
+function screenPetugasScan(){
+  const isManual = state.petugasMode !== 'masuk' && state.petugasMode !== 'pulang';
+  const modeLabel = state.petugasMode==='masuk' ? 'Pemindai Masuk'
+    : state.petugasMode==='pulang' ? 'Pemindai Pulang'
+    : state.petugasMode==='manualMasuk' ? 'Input Manual Masuk'
+    : state.petugasMode==='manualPulang' ? 'Input Manual Pulang'
+    : 'Input Keterangan';
+  const modeTag = state.petugasMode==='masuk' ? 'MASUK'
+    : state.petugasMode==='pulang' ? 'PULANG'
+    : state.petugasMode==='manualMasuk' ? 'MANUAL MASUK'
+    : state.petugasMode==='manualPulang' ? 'MANUAL PULANG'
+    : 'KETERANGAN';
+  return `
+  <div class="screen">
+    ${screenHeaderBar(`${modeLabel} <span class="tag">${modeTag}</span>`)}
+    <div class="screen-body">
+      <div class="scan-layout">
+        <div>
+          ${isManual ? '' : `
+          <div class="scan-panel">
+            <div class="cam-frame" id="camFrame">
+              <video id="camVideo" playsinline webkit-playsinline muted autoplay></video>
+              <div class="brackets"></div><div class="bracket-tr"></div><div class="bracket-bl"></div>
+              <div class="scanline" id="scanLine" style="display:none;"></div>
+              <div class="cam-off" id="camOffMsg">${ICON.camOff}<span style="font-size:13.75px;">Kamera belum aktif</span></div>
+            </div>
+            <div style="display:flex; gap:8px; margin-top:10px;">
+              <button class="btn btn-green" id="btnToggleCam" style="flex:1;">Aktifkan Kamera</button>
+              <button class="btn btn-outline" id="btnToggleTorch" style="display:none; flex-shrink:0; padding:9px 14px;" title="Nyalakan/matikan senter">${ICON.torch||'💡'}</button>
+            </div>
+            <div class="cam-hint">Arahkan kartu QR siswa ke dalam bingkai kamera.</div>
+          </div>
+          <div class="divider-or">ATAU CARI MANUAL</div>`}
+          <div class="scan-panel" style="text-align:left;">
+            ${isManual ? `<p style="font-size:15px;color:var(--text-dim);margin-bottom:10px;">${
+              state.petugasMode==='manualMasuk' ? 'Cari siswa untuk mencatat kedatangan secara manual tanpa pindai QR.'
+              : state.petugasMode==='manualPulang' ? 'Cari siswa untuk mencatat kepulangan secara manual tanpa pindai QR.'
+              : 'Cari siswa yang sudah tercatat masuk/pulang hari ini untuk menambahkan keterangan opsional (Sakit, Ijin, Bolos, Emergency dll).'
+            }</p>` : ''}
+            <div class="search-box">
+              <input class="field" id="searchInput" placeholder="Cari nama siswa atau kelas..." style="width:100%;background:var(--well);border:1px solid var(--line-strong);border-radius:7px;padding:7px 10px;color:var(--text);font-size:14.38px;">
+            </div>
+            <div class="search-results" id="searchResults">${searchResultsHtml()}</div>
+          </div>
+        </div>
+
+        <div class="side-panel" id="sidePanel">${sidePanelContent()}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function searchResultsHtml(){
+  const q = (state.searchQuery||'').toLowerCase();
+  const list = state.students.filter(s => !q || s.name.toLowerCase().includes(q) || s.kelas.toLowerCase().includes(q)).slice(0,8);
+  if(state.students.length===0) return emptyState('Belum ada data siswa. Tambahkan lewat panel Admin.');
+  if(list.length===0) return `<div style="padding:16px;color:var(--text-faint);font-size:16.25px;">Tidak ditemukan.</div>`;
+  return list.map(s=>`
+    <button class="search-item" data-pick="${s.id}">
+      <div class="stu-avatar" style="width:32px;height:32px;font-size:15px;">${initials(s.name)}</div>
+      <div class="stu-info"><div class="nm" style="font-size:16.25px;">${escapeHtml(s.name)}</div><div class="meta">${escapeHtml(s.kelas)}</div></div>
+    </button>`).join('');
+}
+
+function sidePanelContent(){
+  const mode = state.petugasMode;
+  const isQuickManual = mode === 'manualMasuk' || mode === 'manualPulang';
+  if(state.lastResult){
+    const {student, ket, sendWa, type, updated} = state.lastResult;
+    const effectiveType = type || (mode==='manualMasuk' ? 'masuk' : mode==='manualPulang' ? 'pulang' : mode);
+    const statusLabel = effectiveType==='masuk' ? 'Masuk' : effectiveType==='pulang' ? 'Pulang' : 'Keterangan';
+    // Tampilkan "· <keterangan>" hanya jika ada keterangan khusus (Sakit/Ijin/dll).
+    // Pemindaian masuk/pulang biasa tidak membawa keterangan apa pun.
+    const ketSuffix = ket ? ` · ${ket}` : '';
+    const resultTitle = updated ? 'Keterangan Tersimpan' : 'Tercatat';
+    const nextLabel = updated ? 'Tambahkan Lagi' : (mode==='masuk'||mode==='pulang') ? 'Pindai Berikutnya' : 'Catat Berikutnya';
+    if(!sendWa){
+      return `
+      <div class="result-card">
+        <div class="result-icon ok">${ICON.check}</div>
+        <h3>${resultTitle}</h3>
+        <p>${escapeHtml(student.name)} — ${statusLabel}${ketSuffix}</p>
+        <p style="font-size:14.38px;color:var(--text-faint);margin-bottom:14px;">Notifikasi WhatsApp tidak dikirim untuk catatan ini.</p>
+        <button class="btn btn-outline btn-block" id="btnScanNext">${nextLabel}</button>
+      </div>`;
+    }
+    const msg = buildWaMessage(student, effectiveType, ket, state.lainnyaNote);
+    return `
+    <div class="result-card">
+      <div class="result-icon ok">${ICON.check}</div>
+      <h3>${resultTitle}</h3>
+      <p>${escapeHtml(student.name)} — ${statusLabel}${ketSuffix}</p>
+      <div class="wa-preview">${escapeHtml(msg)}</div>
+      <a class="btn btn-green btn-block" href="${waLink(student.parentWA, msg)}" target="_blank" rel="noopener" style="margin-bottom:10px;">${ICON.wa} Kirim ke WA Orang Tua</a>
+      <button class="btn btn-outline btn-block" id="btnScanNext">${nextLabel}</button>
+    </div>`;
+  }
+  if(!state.selectedStudent){
+    const title = mode==='manualMasuk' ? 'Input Manual Masuk' : mode==='manualPulang' ? 'Input Manual Pulang' : mode==='manual' ? 'Input Keterangan' : 'Detail Pemindaian';
+    const hint = mode==='manualMasuk' ? 'Cari dan pilih siswa untuk mencatat kedatangan secara manual tanpa pindai QR.'
+      : mode==='manualPulang' ? 'Cari dan pilih siswa untuk mencatat kepulangan secara manual tanpa pindai QR.'
+      : mode==='manual' ? 'Cari dan pilih siswa yang sudah tercatat masuk/pulang hari ini untuk menambahkan keterangan opsional.'
+      : 'Pindai kartu QR atau pilih siswa dari pencarian untuk melanjutkan.';
+    return `<h4>${ICON.qr} ${title}</h4><div class="placeholder">${hint}</div>`;
+  }
+  const s = state.selectedStudent;
+
+  // Panel konfirmasi ringkas untuk SEMUA jenis pencatatan kehadiran (baik siswa
+  // dipilih manual saat mode Pemindai Masuk/Pulang, maupun lewat Input Manual
+  // Masuk/Pulang/Alpa) — TIDAK ada pilihan keterangan (Hadir/Sakit/dll) di sini
+  // sama sekali (kecuali Alpa, yang memang keterangannya sudah pasti "Alpa").
+  // Keterangan lain (Sakit/Ijin/dll) hanya dapat ditambahkan belakangan lewat
+  // mode terpisah "Input Manual (Keterangan)" di bawah, untuk siswa yang sudah
+  // tercatat masuk/pulang.
+  if(mode === 'masuk' || mode === 'pulang' || isQuickManual){
+    const type = mode === 'manualMasuk' ? 'masuk' : mode === 'manualPulang' ? 'pulang' : mode;
+    const label = type === 'masuk' ? 'Masuk' : 'Pulang';
+    const btnClass = type === 'masuk' ? 'btn-green' : 'btn-gold';
+    const heading = isQuickManual ? `Input Manual ${label}` : 'Konfirmasi Kehadiran';
+    return `
+    <h4>${ICON.qr} ${heading}</h4>
+    <div class="selected-stu">
+      <div class="stu-avatar">${initials(s.name)}</div>
+      <div class="stu-info"><div class="nm">${escapeHtml(s.name)}</div><div class="meta">${escapeHtml(s.kelas)} · <span class="code">${s.code}</span></div></div>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:15px;color:var(--text-dim);margin-bottom:12px;cursor:pointer;">
+      <input type="checkbox" id="waOptIn" ${state.sendWaNotif?'checked':''} style="width:15px;height:15px;accent-color:var(--gold);">
+      Kirim notifikasi WhatsApp ke orang tua
+    </label>
+    <button class="btn ${btnClass} btn-block" id="btnQuickManualConfirm" data-type="${type}">${ICON[type]} Konfirmasi ${label}</button>
+    <button class="btn btn-outline btn-block" id="btnCancelSelect" style="margin-top:8px;">Batal</button>
+    `;
+  }
+
+  // Mode "Input Manual" (keterangan) — TIDAK membuat catatan baru. Menambahkan
+  // keterangan opsional (Sakit/Ijin/Alpa/dll) pada catatan Masuk atau Pulang
+  // siswa yang HARI INI sudah tercatat, baik lewat pindai QR maupun input manual.
+  // Ini SATU-SATUNYA tempat keterangan (selain "Hadir") bisa ditambahkan — untuk
+  // siswa yang masuk/pulang dalam keadaan Sakit, Ijin, Bolos, Emergency, dll.
+  if(mode === 'manual'){
+    const t = todayLogsFor(s.id);
+
+    if(!state.selectedKetTarget){
+      const slot = (type, log) => {
+        const label = type==='masuk' ? 'Masuk' : 'Pulang';
+        if(!log){
+          return `<div class="ket-slot ket-slot-empty">
+            <div class="ket-slot-label">${label}</div>
+            <div class="ket-slot-info">Belum tercatat hari ini</div>
+          </div>`;
+        }
+        return `<button class="ket-slot" data-ket-target="${type}">
+          <div class="ket-slot-label">${label}&nbsp; <span class="pill ket-${log.ket||'Hadir'}">${log.ket||'Hadir'}</span></div>
+          <div class="ket-slot-info">Tercatat ${timeOnly(log.timestamp)}${log.note?` · ${escapeHtml(log.note)}`:''}</div>
+        </button>`;
+      };
+      const noneYet = !t.masuk && !t.pulang;
+      return `
+      <h4>${ICON.qr} Input Keterangan</h4>
+      <div class="selected-stu">
+        <div class="stu-avatar">${initials(s.name)}</div>
+        <div class="stu-info"><div class="nm">${escapeHtml(s.name)}</div><div class="meta">${escapeHtml(s.kelas)} · <span class="code">${s.code}</span></div></div>
+      </div>
+      <label style="display:block;font-size:15px;color:var(--text-dim);margin-bottom:8px;">Pilih catatan hari ini untuk ditambahkan keterangan</label>
+      <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:6px;">
+        ${slot('masuk', t.masuk)}
+        ${slot('pulang', t.pulang)}
+      </div>
+      ${noneYet ? `<p style="font-size:14.38px;color:var(--text-faint);margin:6px 0 12px;">Siswa ini belum tercatat masuk maupun pulang hari ini. Lakukan pemindaian QR atau Input Manual Masuk/Pulang terlebih dahulu.</p>` : ''}
+      <button class="btn btn-outline btn-block" id="btnCancelSelect" style="margin-top:8px;">Batal</button>
+      `;
+    }
+
+    const type = state.selectedKetTarget;
+    const log = t[type];
+    if(!log){ state.selectedKetTarget = null; return sidePanelContent(); }
+    const label = type==='masuk' ? 'Masuk' : 'Pulang';
+    return `
+    <h4>${ICON.qr} Keterangan ${label}</h4>
+    <div class="selected-stu">
+      <div class="stu-avatar">${initials(s.name)}</div>
+      <div class="stu-info"><div class="nm">${escapeHtml(s.name)}</div><div class="meta">${escapeHtml(s.kelas)} · <span class="code">${s.code}</span></div></div>
+    </div>
+    <p style="font-size:14.38px;color:var(--text-faint);margin-bottom:12px;">${label} tercatat ${timeOnly(log.timestamp)} · saat ini: <b>${log.ket||'Hadir'}</b>. Gunakan ini apabila siswa masuk/pulang dalam keadaan Sakit, Ijin, Bolos, Emergency, dll.</p>
+    <label style="display:flex;align-items:center;gap:8px;font-size:15px;color:var(--text-dim);margin-bottom:12px;cursor:pointer;">
+      <input type="checkbox" id="waOptIn" ${state.sendWaNotif?'checked':''} style="width:15px;height:15px;accent-color:var(--gold);">
+      Kirim notifikasi WhatsApp ke orang tua
+    </label>
+    <label style="display:block;font-size:15px;color:var(--text-dim);margin-bottom:8px;">Keterangan</label>
+    <div class="ket-grid">
+      ${MANUAL_KET_OPTIONS.map(k=>`<button class="ket-opt ${state.selectedKet===k?'active':''} ${k==='Lainnya'?'ket-opt-add':''}" data-ket="${k}">${ketOptionLabel(k)}</button>`).join('')}
+    </div>
+    ${state.selectedKet==='Lainnya' ? `<div class="field"><input id="lainnyaInput" placeholder="Tulis keterangan..." value="${escapeHtml(state.lainnyaNote)}" style="width:100%;background:var(--well);border:1px solid var(--line-strong);border-radius:7px;padding:7px 10px;color:var(--text);font-size:14.38px;"></div>` : ''}
+    <button class="btn btn-gold btn-block" id="btnSaveKetAnnotation" style="margin-top:6px;">${state.sendWaNotif ? 'Simpan &amp; Siapkan Notifikasi WA' : 'Simpan Keterangan'}</button>
+    <button class="btn btn-outline btn-block" id="btnBackKetTarget" style="margin-top:8px;">Kembali</button>
+    `;
+  }
+}
+
+function escapeHtml(str){
+  return String(str??'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+/* ================= EVENTS ================= */
+function bindGlobalEvents(){
+  const $ = sel => document.querySelector(sel);
+  const on = (sel, ev, fn) => { const el=$(sel); if(el) el.addEventListener(ev, fn); };
+
+  on('#gotoAdminLogin','click',()=>{ state.screen = state.adminUnlocked ? 'admin' : 'adminLogin'; render(); });
+  on('#gotoPetugas','click',()=>{ state.petugasMode=null; state.screen = state.petugasUnlocked ? 'petugasMode' : 'petugasLogin'; render(); });
+  on('#btnHome','click',()=>{ stopCamera(); state.screen='landing'; render(); });
+  on('#btnBack','click',()=>{ handleBack(); });
+
+  // admin login
+  on('#pinSubmit','click', submitPin);
+  const pinEl = $('#pinInput'); if(pinEl){ pinEl.addEventListener('keydown', e=>{ if(e.key==='Enter') submitPin(); }); pinEl.focus(); }
+
+  // admin tabs
+  document.querySelectorAll('.tab').forEach(t=> t.addEventListener('click', ()=>{ state.adminTab = t.dataset.tab; render(); }));
+
+  on('#btnAddStudent','click', addStudent);
+  document.querySelectorAll('[data-qr]').forEach(b=> b.addEventListener('click', ()=>{
+    state.qrModalStudent = state.students.find(s=>s.id===b.dataset.qr); render();
+  }));
+  document.querySelectorAll('[data-del]').forEach(b=> b.addEventListener('click', async ()=>{
+    if(!confirm('Hapus data siswa ini?')) return;
+    const id = b.dataset.del;
+    if(API_URL){
+      b.disabled = true;
+      try{
+        await callApi({ action:'deleteStudent', id });
+      }catch(err){
+        alert('Gagal menghapus di server: ' + err.message);
+        b.disabled = false;
+        return;
+      }
+    }
+    state.students = state.students.filter(s=>s.id!==id);
+    if(!API_URL){ saveStudents(); }
+    render();
+  }));
+  on('#btnCloseQr','click', ()=>{ state.qrModalStudent=null; render(); });
+  on('#btnDownloadQr','click', downloadQr);
+  on('#btnDownloadAllQr','click', ()=>{
+    const sel = document.getElementById('qrBulkKelas');
+    const kelas = sel ? sel.value : '';
+    const list = kelas ? state.students.filter(s=>s.kelas===kelas) : state.students;
+    downloadAllQr(list);
+  });
+
+  // impor massal dari spreadsheet
+  on('#btnDownloadTemplate','click', downloadImportTemplate);
+  on('#btnPickImportFile','click', ()=>{ const fi=document.getElementById('importFileInput'); if(fi) fi.click(); });
+  const importFi = $('#importFileInput');
+  if(importFi){ importFi.addEventListener('change', e=>{ const f=e.target.files[0]; if(f) handleImportFile(f); e.target.value=''; }); }
+  on('#btnCancelImport','click', ()=>{ state.importPreview=null; render(); });
+  on('#btnConfirmImport','click', async ()=>{
+    if(!state.importPreview || !state.importPreview.valid.length) return;
+    const toImport = state.importPreview.valid;
+    const btn = document.getElementById('btnConfirmImport');
+    if(btn){ btn.disabled = true; btn.textContent = 'Mengimpor...'; }
+
+    if(API_URL){
+      try{
+        const res = await callApi({ action:'addStudentsBulk', students: toImport });
+        const { added, skipped } = res.data;
+        state.students = state.students.concat(added);
+        state.importPreview = null;
+        render();
+        if(skipped && skipped.length){
+          alert(`${added.length} siswa berhasil diimpor.\n${skipped.length} baris ditolak server karena NISN sudah terdaftar:\n` +
+            skipped.slice(0,10).map(s=>`- ${s.name} (NISN ${s.nisn}): ${s.reason}`).join('\n') +
+            (skipped.length>10 ? `\n...dan ${skipped.length-10} lainnya` : ''));
+        }
+      }catch(err){
+        alert('Gagal mengimpor ke server: ' + err.message);
+        if(btn){ btn.disabled = false; btn.textContent = `Impor ${toImport.length} Siswa`; }
+      }
+    }else{
+      state.students = state.students.concat(toImport);
+      saveStudents();
+      state.importPreview = null;
+      render();
+    }
+  });
+
+  // petugas mode select
+  on('#modeMasuk','click', ()=>{ state.petugasMode='masuk'; resetScanState(); state.screen='petugasScan'; render(); });
+  on('#modePulang','click', ()=>{ state.petugasMode='pulang'; resetScanState(); state.screen='petugasScan'; render(); });
+  on('#modeManual','click', ()=>{ state.petugasMode='manual'; resetScanState(); state.screen='petugasScan'; render(); });
+  on('#modeManualMasuk','click', ()=>{ state.petugasMode='manualMasuk'; resetScanState(); state.screen='petugasScan'; render(); });
+  on('#modeManualPulang','click', ()=>{ state.petugasMode='manualPulang'; resetScanState(); state.screen='petugasScan'; render(); });
+
+  // petugas scan
+  on('#btnToggleCam','click', toggleCamera);
+  on('#btnToggleTorch','click', toggleTorch);
+  const si = $('#searchInput'); if(si){ si.value = state.searchQuery; si.addEventListener('input', e=>{ state.searchQuery = e.target.value; document.getElementById('searchResults').innerHTML = searchResultsHtml(); bindSearchPicks(); }); si.focus({preventScroll:true}); }
+  bindSearchPicks();
+  bindSidePanelEvents();
+
+  updateClock();
+}
+
+function bindSearchPicks(){
+  document.querySelectorAll('[data-pick]').forEach(b=> b.addEventListener('click', ()=>{
+    pickStudent(state.students.find(s=>s.id===b.dataset.pick));
+  }));
+}
+
+// Mengikat ulang semua kontrol di dalam #sidePanel. Dipanggil setiap kali
+// isi panel diganti secara manual (tanpa render() penuh) supaya kamera
+// yang sedang aktif tidak ikut ter-reset, tapi tombol tetap responsif.
+function bindSidePanelEvents(){
+  const sp = document.getElementById('sidePanel');
+  if(!sp) return;
+  sp.querySelectorAll('.ket-opt').forEach(b=> b.addEventListener('click', ()=>{ state.selectedKet=b.dataset.ket; refreshSidePanel(); }));
+  const li = sp.querySelector('#lainnyaInput'); if(li) li.addEventListener('input', e=>{ state.lainnyaNote = e.target.value; });
+  const wa = sp.querySelector('#waOptIn'); if(wa) wa.addEventListener('change', e=>{ state.sendWaNotif = e.target.checked; refreshSidePanel(); });
+  const qm = sp.querySelector('#btnQuickManualConfirm'); if(qm) qm.addEventListener('click', ()=> confirmManualAttendance(qm.dataset.type));
+  sp.querySelectorAll('[data-ket-target]').forEach(b=> b.addEventListener('click', ()=>{
+    const type = b.dataset.ketTarget;
+    const log = todayLogsFor(state.selectedStudent.id)[type];
+    if(!log) return;
+    state.selectedKetTarget = type;
+    state.selectedKet = MANUAL_KET_OPTIONS.includes(log.ket) ? log.ket : MANUAL_KET_OPTIONS[0];
+    state.lainnyaNote = log.note || '';
+    refreshSidePanel();
+  }));
+  const sk = sp.querySelector('#btnSaveKetAnnotation'); if(sk) sk.addEventListener('click', confirmKetAnnotation);
+  const bk = sp.querySelector('#btnBackKetTarget'); if(bk) bk.addEventListener('click', ()=>{ state.selectedKetTarget=null; refreshSidePanel(); });
+  const cc = sp.querySelector('#btnCancelSelect'); if(cc) cc.addEventListener('click', ()=>{ state.selectedStudent=null; state.selectedKetTarget=null; state.selectedKet=defaultKet(); state.lainnyaNote=''; refreshSidePanel(); });
+  const sn = sp.querySelector('#btnScanNext'); if(sn) sn.addEventListener('click', ()=>{ state.lastResult=null; state.selectedStudent=null; state.selectedKetTarget=null; state.selectedKet=defaultKet(); state.lainnyaNote=''; refreshSidePanel(); });
+}
+
+// Ganti isi #sidePanel + ikat ulang event, tanpa render() penuh (agar kamera tidak terganggu).
+function refreshSidePanel(){
+  const sp = document.getElementById('sidePanel');
+  if(sp){ sp.innerHTML = sidePanelContent(); bindSidePanelEvents(); }
+}
+
+function defaultKet(){ return state.petugasMode === 'manual' ? MANUAL_KET_OPTIONS[0] : 'Hadir'; }
+
+function pickStudent(s){
+  if(!s) return;
+  state.selectedStudent = s; state.selectedKet=defaultKet(); state.selectedKetTarget=null; state.lainnyaNote=''; state.lastResult=null;
+  refreshSidePanel();
+}
+
+function resetScanState(){
+  state.selectedStudent=null; state.selectedKet=defaultKet(); state.selectedKetTarget=null; state.lainnyaNote=''; state.lastResult=null; state.searchQuery='';
+}
+
+function handleBack(){
+  stopCamera();
+  if(state.screen==='petugasScan'){ state.screen='petugasMode'; }
+  else if(state.screen==='petugasMode'){ state.screen='landing'; }
+  else if(state.screen==='admin'){ state.screen='landing'; }
+  else if(state.screen==='adminLogin'){ state.screen='landing'; }
+  else if(state.screen==='petugasLogin'){ state.screen='landing'; }
+  else state.screen='landing';
+  render();
+}
+
+async function submitPin(){
+  const el = document.getElementById('pinInput');
+  const errEl = document.getElementById('pinErr');
+  const val = el.value.trim();
+  const role = state.screen === 'petugasLogin' ? 'petugas' : 'admin';
+  if(!val){ errEl.textContent = 'Masukkan PIN terlebih dahulu.'; return; }
+
+  state.pinLoading = true;
+  errEl.textContent = '';
+  render();
+
+  try{
+    const res = await callApi({ action:'checkPin', role, pin:val });
+    if(res.valid){
+      if(role === 'admin'){ state.adminUnlocked = true; state.screen = 'admin'; }
+      else{ state.petugasUnlocked = true; state.screen = 'petugasMode'; }
+      state.pinLoading = false;
+      render();
+    }else{
+      state.pinLoading = false;
+      render();
+      document.getElementById('pinErr').textContent = 'PIN salah, silakan coba lagi.';
+    }
+  }catch(err){
+    state.pinLoading = false;
+    render();
+    const msg = err.message === 'SERVER_BELUM_DIKONFIGURASI'
+      ? 'Server belum terhubung. Isi API_URL & API_KEY di kode aplikasi terlebih dahulu.'
+      : 'Gagal menghubungi server, coba lagi.';
+    document.getElementById('pinErr').textContent = msg;
+  }
+}
+
+function normalizeNisn(n){ return String(n||'').trim(); }
+
+function findStudentByNisn(nisn, list){
+  const n = normalizeNisn(nisn);
+  if(!n) return null;
+  return (list || state.students).find(s => normalizeNisn(s.nisn) === n) || null;
+}
+
+async function addStudent(){
+  const kelas = document.getElementById('fKelas').value.trim();
+  const name = document.getElementById('fName').value.trim();
+  const nisn = document.getElementById('fNisn').value.trim();
+  const wa = document.getElementById('fWa').value.trim();
+  if(!name || !kelas){ alert('Nama dan kelas wajib diisi.'); return; }
+  if(nisn){
+    const dup = findStudentByNisn(nisn);
+    if(dup){ alert(`NISN ${nisn} sudah terdaftar atas nama ${dup.name} (${dup.kelas}). NISN harus unik.`); return; }
+  }
+  const student = { id:uid(), name, kelas, nisn, parentWA:wa, code:genCode() };
+
+  const btn = document.getElementById('btnAddStudent');
+  if(btn){ btn.disabled = true; btn.textContent = 'Menyimpan...'; }
+
+  if(API_URL){
+    try{
+      await callApi({ action:'addStudent', student });
+    }catch(err){
+      alert('Gagal menyimpan ke server: ' + err.message);
+      if(btn){ btn.disabled = false; btn.innerHTML = `${ICON.plus} Tambah &amp; Buat Kartu QR`; }
+      return;
+    }
+  }
+
+  state.students.push(student);
+  if(!API_URL){ saveStudents(); }
+  state.qrModalStudent = student;
+  render();
+}
+
+/* ================= IMPOR MASSAL DARI SPREADSHEET ================= */
+const IMPORT_HEADER_ALIASES = {
+  name: ['nama','nama siswa','nama lengkap','nama lengkap siswa'],
+  kelas: ['kelas','kls'],
+  nisn: ['nisn','nisn siswa','no nisn'],
+  parentWA: ['no wa orang tua','no whatsapp orang tua','nomor wa orang tua','wa orang tua','no wa','whatsapp','no hp orang tua','nomor whatsapp','no wa ortu','no. whatsapp orang tua']
+};
+
+function normalizeHeader(h){
+  return String(h||'').toLowerCase().trim().replace(/[."'`]/g,'').replace(/\s+/g,' ');
+}
+
+function matchImportField(header){
+  const h = normalizeHeader(header);
+  for(const field in IMPORT_HEADER_ALIASES){
+    if(IMPORT_HEADER_ALIASES[field].includes(h)) return field;
+  }
+  return null;
+}
+
+function downloadImportTemplate(){
+  const header = ['Kelas','Nama','NISN','No WA Orang Tua'];
+  const example = ['XI-2','Ahmad Fahri Ramadhan','0051234567','081234567890'];
+  const csv = header.join(',') + '\n' + example.join(',') + '\n';
+  const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'template_impor_siswa.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function handleImportFile(file){
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try{
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type:'array' });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, { defval:'' });
+      processImportRows(rows);
+    }catch(err){
+      alert('Gagal membaca file. Pastikan formatnya .xlsx, .xls, atau .csv sesuai template.');
+    }
+  };
+  reader.onerror = () => alert('Gagal membaca file.');
+  reader.readAsArrayBuffer(file);
+}
+
+function processImportRows(rows){
+  if(!rows || !rows.length){ alert('File kosong atau tidak terbaca.'); return; }
+
+  const headerKeys = Object.keys(rows[0]);
+  const fieldMap = {};
+  headerKeys.forEach(h => { const f = matchImportField(h); if(f) fieldMap[h] = f; });
+
+  const valid = [];
+  const errors = [];
+  const nisnSeenInFile = new Set(); // deteksi NISN dobel di dalam file yang sama
+  rows.forEach((row, idx) => {
+    const rec = {};
+    for(const h in fieldMap){ rec[fieldMap[h]] = String(row[h] ?? '').trim(); }
+    if(!rec.name || !rec.kelas){
+      errors.push(`Baris ${idx+2}: nama atau kelas kosong, dilewati.`);
+      return;
+    }
+    const nisn = normalizeNisn(rec.nisn);
+    if(nisn){
+      const dupExisting = findStudentByNisn(nisn);
+      if(dupExisting){
+        errors.push(`Baris ${idx+2}: NISN ${nisn} sudah terdaftar atas nama ${dupExisting.name}, dilewati.`);
+        return;
+      }
+      if(nisnSeenInFile.has(nisn)){
+        errors.push(`Baris ${idx+2}: NISN ${nisn} dobel di dalam file ini, dilewati.`);
+        return;
+      }
+      nisnSeenInFile.add(nisn);
+    }
+    valid.push({
+      id: uid(),
+      name: rec.name,
+      kelas: rec.kelas,
+      nisn: rec.nisn || '',
+      parentWA: rec.parentWA || '',
+      code: genCode(),
+    });
+  });
+
+  if(!Object.values(fieldMap).includes('name') || !Object.values(fieldMap).includes('kelas')){
+    alert('Kolom "Nama" dan/atau "Kelas" tidak ditemukan di file. Gunakan template yang disediakan sebagai acuan nama kolom.');
+    return;
+  }
+
+  state.importPreview = { valid, errors };
+  render();
+}
+
+function downloadQr(){
+  const canvas = document.querySelector('#qrCanvasHolder canvas');
+  if(!canvas){ return; }
+  const link = document.createElement('a');
+  link.download = `kartu-${state.qrModalStudent.code}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+/* ================= UNDUH KARTU QR MASSAL (ZIP) ================= */
+// Bersihkan nama file dari karakter yang tidak valid di sistem berkas.
+function sanitizeFileName(str){
+  return String(str||'').trim().replace(/[\\/:*?"<>|]+/g,'-').replace(/\s+/g,'_') || 'siswa';
+}
+
+// Render satu kode QR ke kanvas tersembunyi (di luar layar) lalu ambil data
+// gambarnya sebagai data URL PNG. Dipakai berulang untuk unduhan massal
+// tanpa menampilkan kanvas sementara ini ke pengguna.
+function generateQrDataUrl(text, size){
+  const holder = document.createElement('div');
+  holder.style.position = 'absolute';
+  holder.style.left = '-9999px';
+  holder.style.top = '-9999px';
+  document.body.appendChild(holder);
+  new QRCode(holder, { text, width: size||300, height: size||300, colorDark:'#0A2540', colorLight:'#ffffff' });
+  const canvas = holder.querySelector('canvas');
+  const dataUrl = canvas ? canvas.toDataURL('image/png') : null;
+  document.body.removeChild(holder);
+  return dataUrl;
+}
+
+// Buat & unduh satu file ZIP berisi kartu QR (PNG) untuk setiap siswa di
+// dalam `list`. Dipakai tombol "Unduh Kartu QR (ZIP)" di panel Admin.
+async function downloadAllQr(list){
+  if(typeof JSZip === 'undefined'){
+    alert('Gagal memuat pustaka ZIP. Periksa koneksi internet lalu coba lagi.');
+    return;
+  }
+  if(!list || !list.length){
+    alert('Tidak ada siswa pada pilihan ini untuk diunduh kartunya.');
+    return;
+  }
+  const btn = document.getElementById('btnDownloadAllQr');
+  if(btn){ btn.disabled = true; }
+
+  const zip = new JSZip();
+  const usedNames = {};
+  for(let i=0;i<list.length;i++){
+    const s = list[i];
+    if(btn) btn.textContent = `Menyiapkan ${i+1}/${list.length}...`;
+    const dataUrl = generateQrDataUrl(s.code);
+    if(dataUrl){
+      const base64 = dataUrl.split(',')[1];
+      let fname = `${sanitizeFileName(s.kelas)}_${sanitizeFileName(s.name)}_${s.code}.png`;
+      if(usedNames[fname]){
+        usedNames[fname]++;
+        fname = fname.replace(/\.png$/, `_${usedNames[fname]}.png`);
+      }else{
+        usedNames[fname] = 1;
+      }
+      zip.file(fname, base64, { base64:true });
+    }
+    // beri jeda singkat tiap 20 kartu supaya antarmuka tetap responsif
+    if(i % 20 === 19){ await new Promise(r=> setTimeout(r, 0)); }
+  }
+
+  if(btn) btn.textContent = 'Membuat file ZIP...';
+  const blob = await zip.generateAsync({ type:'blob' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const scopeLabel = (list.length === state.students.length) ? 'semua-siswa' : sanitizeFileName(list[0].kelas);
+  a.download = `kartu-qr-${scopeLabel}.zip`;
+  a.href = url;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  if(btn){ btn.disabled = false; btn.innerHTML = `${ICON.download} Unduh Kartu QR (ZIP)`; }
+}
+
+// Menyimpan catatan Masuk/Pulang — dipakai untuk SEMUA jalur pencatatan biasa:
+// siswa dipilih manual saat mode Pemindai Masuk/Pulang, maupun lewat Input Manual
+// Masuk/Pulang. TIDAK ada keterangan (Hadir/Sakit/dll) yang disertakan di sini —
+// keterangan hanya bisa ditambahkan belakangan lewat mode "Input Manual (Keterangan)".
+// Kekecualian: type==='alpa' (siswa TIDAK MASUK sekolah) — dicatat langsung dengan
+// keterangan "Alpa" pada slot Masuk hari itu (karena siswa memang tidak hadir sama
+// sekali, jadi tidak ada catatan Masuk terlebih dahulu untuk ditambahkan keterangan).
+async function confirmManualAttendance(type){
+  const s = state.selectedStudent;
+  if(!s) return;
+  ensureAudio(); // dipanggil di dalam gestur klik tombol agar audio diizinkan browser
+  // Cek cepat berbasis cache LOKAL dulu untuk kasus yang jelas-jelas duplikat
+  // di PERANGKAT INI. Keputusan yang benar-benar final (termasuk mendeteksi
+  // pemindaian dari PERANGKAT LAIN) tetap ditentukan oleh server di bawah.
+  const localDup = todayLogsFor(s.id)[type];
+  if(localDup){
+    playRejectBeep();
+    const label = type==='masuk' ? 'MASUK' : 'PULANG';
+    showToast(`Pemindaian ditolak — ${s.name} sudah tercatat ${label} hari ini pukul ${timeOnly(localDup.timestamp)}.`, 'warn');
+    return;
+  }
+  const sendWa = state.sendWaNotif;
+  const log = { id:uid(), studentId:s.id, type, ket:'', note:'', timestamp:Date.now() };
+
+  // Nonaktifkan tombol sementara menunggu konfirmasi server — mencegah klik
+  // ganda yang bisa memicu dua permintaan untuk catatan yang sama.
+  const btn = document.getElementById('btnQuickManualConfirm');
+  if(btn){ btn.disabled = true; btn.dataset.origText = btn.textContent; btn.textContent = 'Memeriksa...'; }
+
+  // Kirim & TUNGGU konfirmasi SERVER sebelum benar-benar dianggap berhasil —
+  // inilah yang mencegah dua perangkat berbeda sama-sama berhasil mencatat
+  // siswa yang sama pada hari yang sama.
+  const result = await saveLogEntry(log);
+  const label = type==='masuk' ? 'MASUK' : 'PULANG';
+
+  if(result.duplicate){
+    if(result.existing && !state.logs.some(l=>l.id===result.existing.id)){
+      state.logs.push(result.existing);
+    }
+    playRejectBeep();
+    const waktu = result.existing ? ` pukul ${timeOnly(result.existing.timestamp)}` : '';
+    showToast(`Pemindaian ditolak — ${s.name} sudah tercatat ${label} hari ini${waktu} (di perangkat lain).`, 'warn');
+    if(btn){ btn.disabled = false; btn.textContent = btn.dataset.origText || btn.textContent; }
+    return;
+  }
+
+  playScanBeep();
+  state.logs.push(log);
+  state.lastResult = { student:s, ket:'', sendWa, type };
+  const sp = document.getElementById('sidePanel'); if(sp) sp.innerHTML = sidePanelContent();
+}
+
+// Mode "Input Manual" (keterangan) — menyimpan keterangan opsional (Sakit/Ijin/
+// Bolos/Emergency/dll) pada catatan Masuk atau Pulang siswa yang HARI INI sudah tercatat.
+// Ini MENGUBAH catatan yang sudah ada, bukan membuat baris riwayat baru.
+function confirmKetAnnotation(){
+  const s = state.selectedStudent;
+  const type = state.selectedKetTarget;
+  if(!s || !type) return;
+  const log = todayLogsFor(s.id)[type];
+  if(!log) return;
+  const sendWa = state.sendWaNotif;
+  const ket = state.selectedKet;
+  const note = ket==='Lainnya' ? state.lainnyaNote : '';
+  log.ket = ket;
+  log.note = note;
+  updateLogEntry(log);
+  state.lastResult = { student:s, ket, sendWa, type, updated:true };
+  state.selectedKetTarget = null;
+  const sp = document.getElementById('sidePanel'); if(sp) sp.innerHTML = sidePanelContent();
+}
+
+/* ================= AFTER RENDER (qr draw, camera) ================= */
+function afterRender(){
+  if(state.qrModalStudent){
+    const holder = document.getElementById('qrCanvasHolder');
+    if(holder){
+      holder.innerHTML='';
+      new QRCode(holder, { text: state.qrModalStudent.code, width:150, height:150, colorDark:'#0A2540', colorLight:'#ffffff' });
+    }
+  }
+  updateClock();
+  if(state._clockTimer) clearInterval(state._clockTimer);
+  state._clockTimer = setInterval(updateClock, 1000*30);
+}
+
+function updateClock(){
+  const c = document.getElementById('liveClock'); const d = document.getElementById('liveDate');
+  if(!c) return;
+  const now = new Date();
+  c.textContent = now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+  d.textContent = now.toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'short'});
+}
+
+/* ================= NOTIFIKASI (TOAST) ================= */
+// Notifikasi tulisan untuk setiap pemindaian yang GAGAL atau DITOLAK (kode tidak
+// dikenali, atau siswa sudah tercatat masuk/pulang hari ini). Elemen dibuat sekali
+// dan ditempel langsung ke <body> (bukan lewat innerHTML render()) supaya animasi
+// keluar-masuknya tidak terpotong saat layar dirender ulang.
+let toastTimer = null;
+function ensureToastEl(){
+  let el = document.getElementById('globalToast');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'globalToast';
+    el.className = 'global-toast';
+    document.body.appendChild(el);
+  }
+  return el;
+}
+function showToast(message, kind){
+  const el = ensureToastEl();
+  el.textContent = message;
+  el.className = `global-toast show ${kind||'err'}`;
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ el.classList.remove('show'); }, 3400);
+}
+
+/* ================= AUDIO: efek bunyi pemindaian ================= */
+let audioCtx = null;
+function ensureAudio(){
+  if(!audioCtx){
+    try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){ /* audio tidak didukung */ }
+  }
+  if(audioCtx && audioCtx.state === 'suspended'){ audioCtx.resume(); }
+}
+function playBeep(freq, duration, type, volume, delay){
+  if(!audioCtx) return;
+  try{
+    const t0 = audioCtx.currentTime + (delay||0);
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.value = freq || 880;
+    const vol = volume==null ? 0.28 : volume;
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(vol, t0 + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + (duration || 0.12));
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(t0);
+    osc.stop(t0 + (duration || 0.12) + 0.03);
+  }catch(e){ /* abaikan jika audio gagal diputar */ }
+}
+// Bip pemindaian BERHASIL — dipakai SAMA PERSIS untuk Pemindai Masuk maupun
+// Pemindai Pulang. Dibuat panjang & keras: dua nada NAIK ("ding-DING") berurutan
+// dengan lapisan oktaf di atasnya, supaya terasa besar/penuh dan jelas terdengar
+// meski di lingkungan gerbang yang ramai.
+function playScanBeep(){
+  if(!audioCtx) return;
+  playBeep(988,  0.16, 'triangle', 0.95, 0);     // nada 1 (pendek)
+  playBeep(1319, 0.36, 'triangle', 0.98, 0.15);  // nada 2 (naik, panjang) — puncak bip
+  playBeep(1976, 0.32, 'sine',     0.55, 0.15);  // lapisan oktaf atas, kesan "besar"/penuh
+}
+// Bip pemindaian GAGAL/DITOLAK (kode tak dikenali ATAU sudah tercatat hari ini) —
+// dipakai SAMA PERSIS untuk Pemindai Masuk maupun Pemindai Pulang. Sengaja dibuat
+// panjang & keras juga, tapi dengan pola nada TURUN dan gelombang gerigi (sawtooth)
+// yang lebih tegas/kasar — supaya jelas berbeda dari bip sukses hanya dengan
+// mendengarkan, tanpa perlu melihat layar.
+function playRejectBeep(){
+  if(!audioCtx) return;
+  playBeep(392, 0.20, 'sawtooth', 0.9, 0);     // nada 1
+  playBeep(261, 0.40, 'sawtooth', 0.95, 0.19); // nada 2 (turun, panjang) — penekanan penolakan
+}
+
+/* ================= CAMERA / QR SCAN ================= */
+let scanRAF = null, scanCanvas = null, scanCtx = null, scanCanvasFull = null, scanCtxFull = null, scanFrameCounter = 0, lastDecodeAt = 0;
+const DECODE_INTERVAL_MS = 66; // batasi decode ke ~15x/detik — cukup cepat untuk terasa instan, jauh lebih ringan di CPU dibanding mengikuti refresh layar (60x/detik)
+const MAX_SCAN_DIM = 900; // batas ukuran sisi terpanjang untuk pemindaian UTAMA (tiap frame) — menjaga performa tetap ringan di semua HP terlepas dari berapa pun resolusi asli kamera
+const SCAN_COOLDOWN_MS = 2500; // jeda singkat anti-dobel (kode tak dikenali / sudah tercatat menurut cache lokal)
+const SAME_CODE_SUCCESS_COOLDOWN_MS = 60 * 1000; // 60 detik — jeda panjang untuk kode QR yang SAMA setelah berhasil tercatat (Masuk maupun Pulang)
+// Rangkaian constraint kamera dari yang paling spesifik ke yang paling longgar.
+// Resolusi 2K dicoba lebih dulu untuk detail ekstra pada kode QR kecil/jauh,
+// tapi TIDAK sampai 4K — resolusi setinggi itu sering gagal dinegosiasikan
+// dengan mulus oleh banyak HP (menyebabkan kamera lambat/gagal menyala) dan
+// terlalu berat diproses tiap frame. Detail ekstra untuk kode kecil/jauh kini
+// didapat lewat pemindaian area tengah beresolusi asli (lihat tickScan), BUKAN
+// dari menaikkan resolusi utama setinggi mungkin.
+// Sebagian perangkat (terutama iPhone/iPad tertentu, laptop dengan 1 kamera, atau
+// beberapa Android murah/lawas) menolak constraint yang terlalu ketat (mis. facingMode
+// exact atau resolusi tinggi) dengan OverconstrainedError — jadi kita coba beberapa
+// tingkat constraint sampai salah satu berhasil, alih-alih langsung gagal total.
+const CAMERA_CONSTRAINT_CHAIN = [
+  { video:{ facingMode:{ exact:'environment' }, width:{ ideal:2560 }, height:{ ideal:1440 } } },
+  { video:{ facingMode:'environment', width:{ ideal:2560 }, height:{ ideal:1440 } } },
+  { video:{ facingMode:'environment', width:{ ideal:1920 }, height:{ ideal:1080 } } },
+  { video:{ facingMode:'environment', width:{ ideal:1280 }, height:{ ideal:720 } } },
+  { video:{ facingMode:'environment' } },
+  { video:true }
+];
+
+async function getCameraStream(){
+  let lastErr = null;
+  for(const constraints of CAMERA_CONSTRAINT_CHAIN){
+    try{
+      // Batas waktu per percobaan — pada sebagian HP, negosiasi resolusi tinggi
+      // bisa menggantung lama tanpa pernah resolve/reject. Tanpa batas waktu,
+      // operator hanya melihat "Membuka Kamera..." tanpa penjelasan. Jika satu
+      // tingkat constraint melewati batas waktu, anggap gagal dan lanjut ke
+      // tingkat constraint berikutnya yang lebih longgar.
+      const timeout = new Promise((_, reject)=> setTimeout(()=> reject(new Error('CAMERA_TIMEOUT')), 6000));
+      return await Promise.race([ navigator.mediaDevices.getUserMedia(constraints), timeout ]);
+    }catch(err){
+      lastErr = err;
+      // OverconstrainedError / NotFoundError / TypeError → coba constraint berikutnya yang lebih longgar.
+      // NotAllowedError / SecurityError (izin ditolak) tidak akan membaik dengan constraint lain, hentikan lebih awal.
+      if(err && (err.name === 'NotAllowedError' || err.name === 'SecurityError' || err.name === 'PermissionDeniedError')){
+        throw err;
+      }
+    }
+  }
+  throw lastErr;
+}
+
+function cameraErrorMessage(err){
+  const isSecure = window.isSecureContext || location.hostname==='localhost';
+  if(!isSecure){
+    return 'Kamera hanya bisa diakses lewat koneksi aman (HTTPS). Buka halaman ini melalui tautan https:// agar kamera dapat digunakan.';
+  }
+  if(typeof jsQR !== 'function'){
+    return 'Pustaka pemindai QR gagal dimuat (periksa koneksi internet Anda saat membuka halaman ini), sehingga kamera tidak dapat membaca kode QR. Muat ulang halaman, atau gunakan pencarian manual di bawah.';
+  }
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    return 'Peramban ini tidak mendukung akses kamera. Gunakan Chrome/Safari versi terbaru, atau pindai lewat pencarian manual di bawah.';
+  }
+  if(err && err.message === 'CAMERA_TIMEOUT'){
+    return 'Kamera membutuhkan waktu terlalu lama untuk menyala. Coba tekan "Aktifkan Kamera" sekali lagi, atau tutup aplikasi lain yang mungkin sedang memakai kamera.';
+  }
+  switch(err && err.name){
+    case 'NotAllowedError':
+    case 'PermissionDeniedError':
+      return 'Izin kamera ditolak. Aktifkan izin kamera untuk situs ini lewat pengaturan peramban/HP Anda, lalu tekan "Aktifkan Kamera" lagi.';
+    case 'NotFoundError':
+    case 'DevicesNotFoundError':
+      return 'Tidak ditemukan kamera pada perangkat ini. Gunakan pencarian manual di bawah.';
+    case 'NotReadableError':
+    case 'TrackStartError':
+      return 'Kamera sedang dipakai aplikasi lain. Tutup aplikasi kamera/lainnya lalu coba lagi.';
+    case 'OverconstrainedError':
+      return 'Kamera perangkat ini tidak mendukung pengaturan yang diminta. Coba lagi atau gunakan pencarian manual.';
+    default:
+      return 'Tidak dapat mengakses kamera. Anda dapat menggunakan pencarian manual di bawah.';
+  }
+}
+
+async function toggleCamera(){
+  if(state.cameraActive){ stopCamera(); redrawCamButton(); return; }
+  ensureAudio(); // AudioContext dibuat/dilanjutkan di dalam gestur pengguna (klik tombol) agar audio boleh diputar nanti
+
+  // Periksa pustaka pemindai QR sudah termuat SEBELUM kamera dinyalakan — supaya
+  // petugas tidak melihat kamera menyala tapi tidak pernah merespons kode QR.
+  if(typeof jsQR !== 'function'){
+    alert(cameraErrorMessage(null));
+    return;
+  }
+
+  const btn = document.getElementById('btnToggleCam');
+  if(btn){ btn.disabled = true; btn.textContent = 'Membuka Kamera...'; }
+
+  try{
+    // Lepaskan stream sebelumnya (jika ada) supaya kamera tidak "terkunci" di beberapa
+    // perangkat iOS/Android saat tombol ditekan berulang kali dengan cepat.
+    if(state.cameraStream){ state.cameraStream.getTracks().forEach(t=>t.stop()); state.cameraStream=null; }
+
+    const stream = await getCameraStream();
+    state.cameraStream = stream; state.cameraActive = true;
+
+    const video = document.getElementById('camVideo');
+    // Set atribut secara eksplisit lewat JS juga (bukan hanya lewat HTML) karena
+    // sebagian WebView Android/iOS (mis. browser dalam-aplikasi) mengabaikan atribut
+    // HTML playsinline/muted jika tidak diset ulang lewat JavaScript.
+    video.setAttribute('playsinline', 'true');
+    video.setAttribute('webkit-playsinline', 'true');
+    video.muted = true;
+    video.srcObject = stream;
+
+    // Tunggu metadata video siap sebelum play() — mencegah error "play() request was
+    // interrupted" yang sering muncul di Safari iOS.
+    await new Promise((resolve)=>{
+      if(video.readyState >= 1) return resolve();
+      video.onloadedmetadata = () => resolve();
+    });
+    await video.play();
+
+    document.getElementById('camOffMsg').style.display='none';
+    document.getElementById('scanLine').style.display='block';
+    scanCanvas = document.createElement('canvas');
+    scanCanvasFull = document.createElement('canvas'); // khusus pemindaian cadangan area tengah, resolusi asli
+    // willReadFrequently: true → mempercepat getImageData berulang (dipakai jsQR tiap
+    // frame) terutama di Chrome Android; browser lain mengabaikannya dengan aman.
+    scanCtx = scanCanvas.getContext('2d', { willReadFrequently:true });
+    scanCtxFull = scanCanvasFull.getContext('2d', { willReadFrequently:true });
+    lastDecodeAt = 0; scanFrameCounter = 0;
+    tickScan(video);
+
+    // Tampilkan tombol senter HANYA jika perangkat benar-benar mendukungnya (mis.
+    // sebagian besar Android mendukung, iPhone Safari umumnya TIDAK) — supaya
+    // tombol tidak tampil percuma di perangkat yang tidak bisa menyalakan flash
+    // lewat browser. Berguna untuk memindai di kondisi gerbang yang minim cahaya.
+    state.torchOn = false;
+    const torchBtn = document.getElementById('btnToggleTorch');
+    try{
+      const track = stream.getVideoTracks()[0];
+      const caps = track.getCapabilities ? track.getCapabilities() : {};
+      if(caps && caps.torch && torchBtn){ torchBtn.style.display='inline-flex'; }
+      // Minta fokus otomatis BERKELANJUTAN (bukan fokus tetap di jarak dekat)
+      // jika didukung — penting supaya kode QR yang berjarak agak jauh dari
+      // kamera tetap terfokus tajam, bukan buram. Diabaikan dengan aman di
+      // perangkat yang tidak mendukung (mis. banyak versi Safari iOS).
+      if(caps && caps.focusMode && Array.isArray(caps.focusMode) && caps.focusMode.includes('continuous')){
+        track.applyConstraints({ advanced:[{ focusMode:'continuous' }] }).catch(()=>{});
+      }
+    }catch(e){ /* getCapabilities tidak didukung (mis. Safari) — lewati saja */ }
+  }catch(err){
+    state.cameraActive = false; state.cameraStream = null;
+    alert(cameraErrorMessage(err));
+  }
+  if(btn) btn.disabled = false;
+  redrawCamButton();
+}
+function redrawCamButton(){
+  const b = document.getElementById('btnToggleCam');
+  if(b) b.textContent = state.cameraActive ? 'Matikan Kamera' : 'Aktifkan Kamera';
+  const t = document.getElementById('btnToggleTorch');
+  if(t && !state.cameraActive){ t.style.display='none'; }
+}
+// Nyalakan/matikan senter (flash) kamera belakang — membantu pemindaian di kondisi
+// minim cahaya (mis. gerbang sekolah pagi/menjelang malam). Hanya berfungsi di
+// perangkat yang mendukung MediaTrack "torch" (umumnya Android Chrome); pada
+// perangkat yang tidak mendukung, tombolnya otomatis disembunyikan.
+async function toggleTorch(){
+  if(!state.cameraStream) return;
+  try{
+    const track = state.cameraStream.getVideoTracks()[0];
+    state.torchOn = !state.torchOn;
+    await track.applyConstraints({ advanced:[{ torch: state.torchOn }] });
+    const t = document.getElementById('btnToggleTorch');
+    if(t) t.classList.toggle('btn-gold', state.torchOn);
+  }catch(e){
+    showToast('Senter tidak didukung pada perangkat ini.', 'err');
+  }
+}
+function stopCamera(){
+  if(state.cameraStream){ state.cameraStream.getTracks().forEach(t=>t.stop()); }
+  state.cameraStream=null; state.cameraActive=false; state.torchOn=false;
+  if(scanRAF) cancelAnimationFrame(scanRAF); scanRAF=null;
+  // Lepaskan srcObject secara eksplisit — di iOS Safari, lampu indikator kamera
+  // kadang tetap menyala jika srcObject tidak dikosongkan setelah track dihentikan.
+  const video = document.getElementById('camVideo');
+  if(video){ try{ video.pause(); }catch(e){} video.srcObject = null; }
+  const off = document.getElementById('camOffMsg'); if(off) off.style.display='flex';
+  const sl = document.getElementById('scanLine'); if(sl) sl.style.display='none';
+}
+// Hentikan kamera otomatis saat halaman disembunyikan (pindah aplikasi/tab, kunci
+// layar) agar tidak terjadi error kamera "hilang" saat pengguna kembali — pengguna
+// tinggal menekan "Aktifkan Kamera" lagi saat kembali ke aplikasi.
+document.addEventListener('visibilitychange', () => {
+  if(document.hidden && state.cameraActive){
+    stopCamera();
+    redrawCamButton();
+  }
+});
+async function tickScan(video){
+  if(!state.cameraActive) return;
+  try{
+    // THROTTLE laju decode ke ~15x/detik (bukan mengikuti refresh layar yang bisa
+    // 60x/detik) — pratinjau video tetap mulus (dirender native oleh <video>,
+    // bukan lewat canvas ini), tapi kerja BERAT (getImageData + jsQR) jadi jauh
+    // lebih ringan di CPU, terutama HP kelas bawah, tanpa mengurangi kecepatan
+    // pemindaian yang terasa oleh operator (15x/detik jauh lebih dari cukup).
+    const now0 = performance.now();
+    if(now0 - lastDecodeAt < DECODE_INTERVAL_MS){
+      scanRAF = requestAnimationFrame(()=>tickScan(video));
+      return;
+    }
+    lastDecodeAt = now0;
+    if(video.readyState === video.HAVE_ENOUGH_DATA && video.videoWidth > 0){
+      const vw = video.videoWidth, vh = video.videoHeight;
+      // PEMINDAIAN UTAMA — dijalankan tiap siklus decode. Ukurannya SENGAJA
+      // dipangkas ke maksimal ~900px sisi terpanjang (drawImage dari video
+      // langsung ke ukuran kecil ini, tanpa pernah membuat canvas beresolusi
+      // penuh) — supaya kecepatan & kelancaran pemindaian tetap konsisten di
+      // semua HP, berapa pun resolusi asli kamera yang berhasil dinegosiasikan.
+      // inversionAttempts:'dontInvert' mempercepat decode (kartu QR fisik yang
+      // dicetak normal tidak butuh percobaan invert warna).
+      const scale = Math.min(1, MAX_SCAN_DIM / Math.max(vw, vh));
+      const sw = Math.max(1, Math.round(vw * scale)), sh = Math.max(1, Math.round(vh * scale));
+      scanCanvas.width = sw; scanCanvas.height = sh;
+      scanCtx.drawImage(video, 0, 0, sw, sh);
+      const img = scanCtx.getImageData(0, 0, sw, sh);
+      let code = jsQR(img.data, img.width, img.height, { inversionAttempts:'dontInvert' });
+      // LAPISAN KEDUA — khusus kode QR yang kecil/berjarak agak jauh: kalau
+      // pemindaian utama di atas tidak menemukan apa pun, coba pindai ULANG
+      // hanya area TENGAH bingkai (tempat operator biasanya mengarahkan kartu)
+      // pada RESOLUSI ASLI kamera (canvas terpisah, tidak dipangkas), supaya
+      // detail piksel kode yang kecil tetap terjaga. Hanya dijalankan setiap
+      // beberapa siklus saat tidak ada kode ditemukan — bukan tiap kali — agar
+      // tidak membebani HP kelas bawah maupun mengganggu kelancaran kamera.
+      // attemptBoth dipakai di sini (bukan dontInvert) karena lapisan ini
+      // memang jarang berjalan, jadi lebih menyeluruh lebih diutamakan.
+      if(!code){
+        scanFrameCounter = (scanFrameCounter + 1) % 5;
+        if(scanFrameCounter === 0){
+          scanCanvasFull.width = vw; scanCanvasFull.height = vh;
+          scanCtxFull.drawImage(video, 0, 0, vw, vh);
+          const cropW = Math.round(vw * 0.5), cropH = Math.round(vh * 0.5);
+          const cropX = Math.round((vw - cropW) / 2), cropY = Math.round((vh - cropH) / 2);
+          const centerImg = scanCtxFull.getImageData(cropX, cropY, cropW, cropH);
+          code = jsQR(centerImg.data, centerImg.width, centerImg.height, { inversionAttempts:'attemptBoth' });
+        }
+      }
+      if(code && code.data){
+        const scannedCode = code.data.trim();
+        const now = Date.now();
+        // JEDA PER-KODE QR: jika kode ini masih dalam masa tenang (baik jeda
+        // singkat anti-dobel maupun jeda 60 detik setelah berhasil tercatat),
+        // kamera diam sepenuhnya untuk kode ini — TANPA bip/notifikasi apa pun,
+        // supaya tidak berisik kalau kartu yang sama masih/kembali berada di
+        // depan kamera. Kode QR LAIN tetap diproses seperti biasa.
+        const cooldownUntil = state.scanCooldowns[scannedCode];
+        if(cooldownUntil){
+          if(now < cooldownUntil){
+            scanRAF = requestAnimationFrame(()=>tickScan(video));
+            return;
+          }
+          delete state.scanCooldowns[scannedCode]; // jeda sudah berakhir — bersihkan dari peta
+        }
+        const found = state.students.find(s=> s.code === scannedCode);
+        if(!found){
+          // QR terbaca tapi kodenya tidak cocok dengan data siswa manapun.
+          state.scanCooldowns[scannedCode] = now + SCAN_COOLDOWN_MS;
+          playRejectBeep();
+          showToast('Pemindaian ditolak — kode QR tidak dikenali / data siswa tidak ditemukan.', 'err');
+          scanRAF = requestAnimationFrame(()=>tickScan(video));
+          return;
+        }
+        // Cek cepat berbasis cache LOKAL dulu (langsung, tanpa jaringan) untuk
+        // kasus yang jelas-jelas duplikat di PERANGKAT INI. Pemeriksaan yang
+        // benar-benar menentukan (termasuk LINTAS PERANGKAT lain) tetap ada
+        // di server — lihat pemanggilan saveLogEntry() di bawah.
+        const localDup = todayLogsFor(found.id)[state.petugasMode];
+        if(localDup){
+          // Sudah pasti tercatat hari ini — kode ini tidak akan pernah lolos
+          // scan yang sama hari ini, jadi langsung diberi jeda panjang (10
+          // menit) juga, supaya kamera tidak terus-menerus memeriksa ulang.
+          state.scanCooldowns[scannedCode] = now + SAME_CODE_SUCCESS_COOLDOWN_MS;
+          playRejectBeep();
+          const label = state.petugasMode==='masuk' ? 'MASUK' : 'PULANG';
+          showToast(`Pemindaian ditolak — ${found.name} sudah tercatat ${label} hari ini pukul ${timeOnly(localDup.timestamp)}.`, 'warn');
+          scanRAF = requestAnimationFrame(()=>tickScan(video));
+          return;
+        }
+        // Belum tercatat menurut cache lokal — kirim & TUNGGU konfirmasi SERVER
+        // sebelum benar-benar dianggap berhasil. Inilah yang mencegah dua
+        // perangkat berbeda sama-sama berhasil memindai siswa yang sama pada
+        // hari yang sama: server yang jadi wasit tunggal, bukan HP masing-masing.
+        const log = { id:uid(), studentId:found.id, type:state.petugasMode, ket:'', note:'', timestamp:now };
+        const result = await saveLogEntry(log);
+        const label = state.petugasMode==='masuk' ? 'MASUK' : 'PULANG';
+        if(result.duplicate){
+          // Sudah tercatat lebih dulu di PERANGKAT LAIN — selaraskan cache
+          // lokal dengan data sebenarnya dari server supaya pemindaian
+          // berikutnya di HP ini langsung tahu tanpa perlu ke jaringan lagi.
+          if(result.existing && !state.logs.some(l=>l.id===result.existing.id)){
+            state.logs.push(result.existing);
+          }
+          state.scanCooldowns[scannedCode] = now + SAME_CODE_SUCCESS_COOLDOWN_MS;
+          playRejectBeep();
+          const waktu = result.existing ? ` pukul ${timeOnly(result.existing.timestamp)}` : '';
+          showToast(`Pemindaian ditolak — ${found.name} sudah tercatat ${label} hari ini${waktu} (di perangkat lain).`, 'warn');
+          scanRAF = requestAnimationFrame(()=>tickScan(video));
+          return;
+        }
+        // BERHASIL — kunci kode QR ini selama 60 detik ke depan; selama itu
+        // kamera tidak akan merespons kode yang sama sama sekali, tapi tetap
+        // bebas memindai kode/siswa LAIN seperti biasa.
+        state.scanCooldowns[scannedCode] = now + SAME_CODE_SUCCESS_COOLDOWN_MS;
+        playScanBeep();
+        state.logs.push(log);
+        state.lastResult = { student:found, ket:'', sendWa:state.sendWaNotif, type:state.petugasMode };
+        const offlineNote = result.offline ? ' (belum tersinkron ke server — periksa koneksi)' : '';
+        showToast(`Tercatat — ${found.name} ${label} pukul ${timeOnly(now)}${offlineNote}`, result.offline ? 'warn' : 'ok');
+        refreshSidePanel();
+        scanRAF = requestAnimationFrame(()=>tickScan(video));
+        return;
+      }
+    }
+  }catch(e){
+    // Abaikan error sesaat (mis. saat rotasi layar/frame belum siap) — jangan
+    // menghentikan loop pemindaian karena satu frame gagal dibaca.
+  }
+  scanRAF = requestAnimationFrame(()=>tickScan(video));
+}
+
+/* ================= INIT ================= */
+loadData();
+checkServerStatus();
+setInterval(checkServerStatus, 120000); // periksa ulang setiap 2 menit
+</script>
+</body>
+</html>
